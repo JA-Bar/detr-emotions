@@ -4,4 +4,7 @@
 # python interpreted files
 **/*.pyc
 
+# logs from the model
+detr/logs/*
+
 
