@@ -1,0 +1,7 @@
+# pyenv files
+.python_version
+
+# python interpreted files
+**/*.pyc
+
+
