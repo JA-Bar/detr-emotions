@@ -7,4 +7,10 @@
 # logs from the model
 detr/logs/*
 
+# local file for diverse code planning details
+planning.md
+
+# data
+data/*
+
 
