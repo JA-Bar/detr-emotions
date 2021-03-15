@@ -9,7 +9,6 @@ from tqdm import tqdm
 import requests
 
 
-
 def download_annotations(coco_path, file_name='coco_annotations'):
     COCO_URL = 'http://images.cocodataset.org/annotations/annotations_trainval2017.zip'
 
