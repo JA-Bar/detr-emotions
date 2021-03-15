@@ -15,6 +15,7 @@ planning.md
 
 # data
 data/*
+!data/*.py
 
 # vim
 .vim
