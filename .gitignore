@@ -4,6 +4,9 @@
 # python interpreted files
 **/*.pyc
 
+# notebooks checkpoints
+**/*.ipynb_checkpoints
+
 # logs from the model
 detr/logs/*
 
@@ -15,5 +18,6 @@ data/*
 
 # vim
 .vim
+
 
 
