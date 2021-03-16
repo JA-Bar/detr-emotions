@@ -32,3 +32,9 @@ def denormalize_tensor_image(image, mean='imagenet', std='imagenet', pillow_outp
 
     return image
 
+
+def collate_fn(batch):
+    images, labels = zip(*batch)
+    images = torch.cat([img.unsqueeze(0) for img in images])
+    return images, labels
+
