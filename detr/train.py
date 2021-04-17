@@ -1,6 +1,3 @@
-import os
-import sys
-
 import argparse
 from pathlib import Path
 
@@ -58,7 +55,7 @@ def train(args):
                                args.lambda_matcher_giou,
                                args.lambda_matcher_l1)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "CPU")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
     optim = AdamW(model.parameters(), args.lr)  # pending
