@@ -15,9 +15,11 @@ planning.md
 
 # data
 data/*
+!data/*.py
 
-# vim
+# dev tools
 .vim
+.ropeproject
 
 
 

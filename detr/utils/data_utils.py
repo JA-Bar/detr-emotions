@@ -1,13 +1,5 @@
 import torch
-from albumentations.augmentations import bbox_utils
 from PIL import Image
-
-
-def convert_bboxes_format(bboxes, src_format, tgt_format, image_h, image_w):
-    image_params = {'rows': image_h, 'cols': image_w, 'check_validity': True}
-    bboxes = bbox_utils.convert_bboxes_to_albumentations(bboxes, src_format, **image_params)
-    bboxes = bbox_utils.convert_bboxes_from_albumentations(bboxes, tgt_format, **image_params)
-    return bboxes
 
 
 def denormalize_tensor_image(image, mean='imagenet', std='imagenet', pillow_output=True):

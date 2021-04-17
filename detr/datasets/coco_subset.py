@@ -2,12 +2,12 @@ import json
 from glob import glob
 from pathlib import Path
 
-from detr.datasets.data_utils import convert_bboxes_format
-
 import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
+
+from detr.utils.box_ops import convert_bboxes_format
 
 
 class CocoSubset(Dataset):
