@@ -50,17 +50,26 @@ class DETRLoss(nn.Module):
 
         # compute the classification loss: -log(P(Ci))
         classes_pred = predictions['logits']
-        # classes_labels = labels['classes']
+
+        device = classes_pred.device
 
         target_classes = torch.cat([batch['classes'][J] for batch, (_, J) in zip(labels, indices)])
         all_target_classes = torch.full(
             (classes_pred.size(0), classes_pred.size(1)),
             self.no_class_index, dtype=torch.int64,
-            device=classes_pred.device
+            device=device
         )
         all_target_classes[pred_batch_idx, pred_idx] = target_classes
 
-        class_loss = F.cross_entropy(classes_pred.transpose(1, 2), all_target_classes)
+        # down-weight the no-object class to account for class imbalance
+        classes_weights = torch.ones((self.no_class_index+1,), device=device)
+        classes_weights[self.no_class_index] = 0.1
+
+        class_loss = F.cross_entropy(
+            classes_pred.transpose(1, 2),
+            all_target_classes,
+            weight=classes_weights
+        )
         return class_loss
 
     @staticmethod
