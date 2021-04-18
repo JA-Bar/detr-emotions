@@ -8,7 +8,8 @@
 **/*.ipynb_checkpoints
 
 # logs from the model
-detr/logs/*
+detr/logs/tensorboard/*
+detr/logs/training/*
 
 # local file for diverse code planning details
 planning.md
@@ -17,8 +18,9 @@ planning.md
 data/*
 !data/*.py
 
-# vim
+# dev tools
 .vim
+.ropeproject
 
 
 

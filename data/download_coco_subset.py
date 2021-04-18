@@ -29,7 +29,7 @@ def download_annotations(coco_path, file_name='coco_annotations'):
                     pbar.update(len(ch))
 
 
-def unzip_annotations(coco_path, file_name='coco_annotations', keep_files=False):
+def unzip_annotations(coco_path, file_name='coco_annotations', coco_set='val', keep_files=False):
     print('Unzipping annotations file...')
     annotations_path = (coco_path/file_name).with_suffix('.zip')
     with zipfile.ZipFile(annotations_path, 'r') as f:
@@ -38,7 +38,7 @@ def unzip_annotations(coco_path, file_name='coco_annotations', keep_files=False)
     # clean up everything but the validation (smallest) file
     if not keep_files:
         all_files = set(glob(str(coco_path/'annotations/*.json')))
-        annotations_file = set(glob(str(coco_path/'annotations/instances_val*.json')))
+        annotations_file = set(glob(str(coco_path/f'annotations/instances_{coco_set}*.json')))
         files_to_clean = all_files - annotations_file
 
         confirm = input(f"Delete files: {files_to_clean} as part of the cleanup [y/n]? ")
@@ -50,13 +50,13 @@ def unzip_annotations(coco_path, file_name='coco_annotations', keep_files=False)
             print('Cleanup done!')
 
 
-def download_images(categories, coco_path, limit=10):
+def download_images(categories, coco_path, limit=10, coco_set='val'):
     print(f'Downloading images for categories {categories}')
     base_images_path = coco_path/'images'
     if not base_images_path.exists():
         base_images_path.mkdir(parents=True)
 
-    annotations_path = str(coco_path/'annotations'/'instances_val*.json')
+    annotations_path = str(coco_path/'annotations'/f'instances_{coco_set}*.json')
     coco = COCO(glob(annotations_path)[0])
 
     images_data = []
@@ -75,6 +75,7 @@ def download_images(categories, coco_path, limit=10):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--save_path', default='')
+    parser.add_argument('--coco_set', default='val', choices=['val', 'train'])
     parser.add_argument('--categories', default='truck, boat')
     parser.add_argument('--limit', type=int, default=10)
     parser.add_argument('--keep_files', action='store_true')
@@ -88,10 +89,9 @@ if __name__ == '__main__':
 
     if not (save_path/'annotations').exists():
         download_annotations(save_path)
-        unzip_annotations(save_path, keep_files=args.keep_files)
+        unzip_annotations(save_path, coco_set=args.coco_set, keep_files=args.keep_files)
 
     categories = args.categories.replace(', ', ',').split(',')
 
     download_images(categories, save_path, args.limit)
     print('Coco subset downloaded!')
-

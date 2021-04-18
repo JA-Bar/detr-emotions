@@ -1,13 +1,5 @@
 import torch
-from albumentations.augmentations import bbox_utils
 from PIL import Image
-
-
-def convert_bboxes_format(bboxes, src_format, tgt_format, image_h, image_w):
-    image_params = {'rows': image_h, 'cols': image_w, 'check_validity': True}
-    bboxes = bbox_utils.convert_bboxes_to_albumentations(bboxes, src_format, **image_params)
-    bboxes = bbox_utils.convert_bboxes_from_albumentations(bboxes, tgt_format, **image_params)
-    return bboxes
 
 
 def denormalize_tensor_image(image, mean='imagenet', std='imagenet', pillow_output=True):
@@ -31,4 +23,24 @@ def denormalize_tensor_image(image, mean='imagenet', std='imagenet', pillow_outp
         image = Image.fromarray(image.numpy().astype('uint8'))
 
     return image
+
+
+def collate_fn(batch):
+    images, labels = zip(*batch)
+    images = torch.cat([img.unsqueeze(0) for img in images])
+    return images, labels
+
+
+def labels_to_device(labels, device):
+    for label in labels:
+        for key in label:
+            label[key] = label[key].to(device)
+    return labels
+
+
+def indices_to_device(indices, device):
+    for i, _ in enumerate(indices):
+        indices[i][0] = indices[i][0].to(device)
+        indices[i][1] = indices[i][1].to(device)
+    return indices
 
