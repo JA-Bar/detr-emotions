@@ -36,9 +36,11 @@ class HungarianMatcher(nn.Module):
         # Due to images containing a different number of boxes, this way you
         # generalize
         flat_boxes_pred = predictions['bboxes'].flatten(0, 1)
+        flat_boxes_pred = flat_boxes_pred.detach()
         flat_boxes_pred = box_ops.box_cxcywh_to_xyxy(flat_boxes_pred)
 
         flat_boxes_labels = torch.cat([label['bboxes'] for label in labels])
+        flat_boxes_labels = flat_boxes_labels.detach()
         flat_boxes_labels = box_ops.box_cxcywh_to_xyxy(flat_boxes_labels)
 
         # GIoU loss is negative as a loss because you want to maximize GIoU
@@ -49,7 +51,11 @@ class HungarianMatcher(nn.Module):
 
         # They use the prediction directly as a loss instead of cross-entropy
         flat_classes_pred = predictions['logits'].flatten(0, 1)
+        flat_classes_pred = flat_classes_pred.detach()
+
         flat_classes_labels = torch.cat([label['classes'] for label in labels])
+        flat_classes_labels = flat_classes_labels.detach()
+
         class_loss = -flat_classes_pred[:, flat_classes_labels]
 
         hungarian_loss = self.lambda_classes*class_loss + boxes_loss
@@ -65,7 +71,7 @@ class HungarianMatcher(nn.Module):
         indices = [linear_sum_assignment(cost_matrix[n_batch]) for n_batch, cost_matrix in
                    enumerate(hungarian_loss.split(boxes_per_batch, -1))]
 
-        indices = [(torch.as_tensor(pred_idx, dtype=torch.int64), torch.as_tensor(tgt_idx, dtype=torch.int64))
+        indices = [[torch.as_tensor(pred_idx, dtype=torch.int64), torch.as_tensor(tgt_idx, dtype=torch.int64)]
                    for pred_idx, tgt_idx in indices]
 
         return indices

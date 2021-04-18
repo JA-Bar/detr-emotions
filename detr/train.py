@@ -78,11 +78,13 @@ def train(args):
         # implement progress bar
         for images, labels in tqdm(train_loader, f'Epoch [{epoch}/{args.epochs}]'):
 
-            images.to(device)
+            images = images.to(device)
+            labels = data_utils.labels_to_device(labels, device)
             # see labels moving to gpu
 
             output = model(images)
             matching_indices = matcher(output, labels)
+            matching_indices = data_utils.indices_to_device(matching_indices, device)
 
             loss = loss_fn(output, labels, matching_indices)
 

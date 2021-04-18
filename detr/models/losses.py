@@ -50,11 +50,13 @@ class DETRLoss(nn.Module):
 
         # compute the classification loss: -log(P(Ci))
         classes_pred = predictions['logits']
-        classes_labels = labels['classes']
+        # classes_labels = labels['classes']
 
-        target_classes = torch.cat([batch[J] for batch, (_, J) in zip(classes_labels, indices)])
+        target_classes = torch.cat([batch['classes'][J] for batch, (_, J) in zip(labels, indices)])
         all_target_classes = torch.full(
-            (classes_pred.size(0), classes_pred.size(1)), self.no_class_index, dtype=torch.int64
+            (classes_pred.size(0), classes_pred.size(1)),
+            self.no_class_index, dtype=torch.int64,
+            device=classes_pred.device
         )
         all_target_classes[pred_batch_idx, pred_idx] = target_classes
 
@@ -69,15 +71,13 @@ class DETRLoss(nn.Module):
         pred_batch_idx, pred_idx = map(torch.cat, zip(*pred_all_indices))
 
         boxes_pred = predictions['bboxes']  # [batch_size, n_object_queries, 4]
-        boxes_labels = labels['bboxes']  # [batch_size, n_objects_in_image, 4]
         boxes_pred = boxes_pred[pred_batch_idx, pred_idx]
 
-        # compute the generalized IoU loss
-        flat_boxes_pred = boxes_pred.flatten(0, 1)
-        flat_boxes_pred = box_ops.box_cxcywh_to_xyxy(flat_boxes_pred)
+        boxes_labels = torch.cat([batch['bboxes'][J] for batch, (_, J) in zip(labels, indices)])
 
-        flat_boxes_labels = torch.cat(boxes_labels)
-        flat_boxes_labels = box_ops.box_cxcywh_to_xyxy(flat_boxes_labels)
+        # compute the generalized IoU loss
+        flat_boxes_pred = box_ops.box_cxcywh_to_xyxy(boxes_pred)
+        flat_boxes_labels = box_ops.box_cxcywh_to_xyxy(boxes_labels)
 
         giou_loss = box_ops.generalized_box_iou(flat_boxes_pred, flat_boxes_labels)
         giou_loss = torch.diag(giou_loss).sum()

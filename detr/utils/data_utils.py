@@ -30,3 +30,17 @@ def collate_fn(batch):
     images = torch.cat([img.unsqueeze(0) for img in images])
     return images, labels
 
+
+def labels_to_device(labels, device):
+    for label in labels:
+        for key in label:
+            label[key] = label[key].to(device)
+    return labels
+
+
+def indices_to_device(indices, device):
+    for i, _ in enumerate(indices):
+        indices[i][0] = indices[i][0].to(device)
+        indices[i][1] = indices[i][1].to(device)
+    return indices
+
