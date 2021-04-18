@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from pathlib import Path
 
 import torch
 from torch import nn
@@ -93,7 +94,15 @@ class DETR(nn.Module):
         return preds
 
     def load_demo_state_dict(self, path_to_dict):
-        state_dict = torch.load(path_to_dict)
+        if not Path(path_to_dict).exists():
+            state_dict = torch.hub.load_state_dict_from_url(
+                url='https://dl.fbaipublicfiles.com/detr/detr_demo-da2a99e9.pth',
+                model_dir=path_to_dict,
+                map_location='cpu',
+                check_hash=True)
+        else:
+            state_dict = torch.load(path_to_dict)
+
         name_changes = {
             'query_pos': 'object_queries',
             'row_embed': 'row_pos_embed',
@@ -103,5 +112,4 @@ class DETR(nn.Module):
             state_dict[new_name] = state_dict[old_name]
             state_dict.pop(old_name)
         self.load_state_dict(state_dict, strict=False)
-
 

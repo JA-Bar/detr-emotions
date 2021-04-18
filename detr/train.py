@@ -49,14 +49,19 @@ def train(args):
                             shuffle=True,
                             collate_fn=data_utils.collate_fn)
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     logger.info("Loading model...")
     model = DETR(args.num_classes, args.dim_model, args.n_heads, n_queries=args.n_queries)
+
+    if args.mode == 'pretrained':
+        model.load_demo_state_dict('data/state_dicts/detr_demo.pth')
+
+    model.to(device)
+
     matcher = HungarianMatcher(args.lambda_matcher_classes,
                                args.lambda_matcher_giou,
                                args.lambda_matcher_l1)
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.to(device)
 
     optim = AdamW(model.parameters(), args.lr)  # pending
     loss_fn = DETRLoss(args.lambda_loss_classes, args.lambda_loss_giou, args.lambda_loss_l1, args.num_classes)
@@ -98,6 +103,8 @@ if __name__ == '__main__':
 
     # parser.add_argument('--target_classes', required=True)
     parser.add_argument('--target_classes', default="cat, dog")
+
+    parser.add_argument('--mode', default='pretrined', choices=['pretrained', 'checkpoint', 'from_scratch'])
 
     parser.add_argument('--num_classes', type=int, default=91)
     parser.add_argument('--coco_path', default=Path(__file__).parent/'../data/coco/')
