@@ -8,6 +8,8 @@ The purpose of this reimplementation is to recreate and understand the model in 
 while simplifying some of the code to prioritize readability and simplicity over efficiency
 and functionality.
 
+# Setup
+- Install pytorch >= 1.7
 
 
 
