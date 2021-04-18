@@ -10,6 +10,7 @@ and functionality.
 
 # Setup
 - Install pytorch >= 1.7
+- Run `pip3 install -r requirements.txt --force`
 
 
 

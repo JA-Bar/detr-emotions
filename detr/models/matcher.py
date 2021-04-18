@@ -17,6 +17,17 @@ class HungarianMatcher(nn.Module):
         self.lambda_l1 = lambda_l1
 
     def forward(self, predictions, labels):
+        """Calculate the matching indices between predictions and labels.
+
+        Args:
+            predictions: Dict with keys:
+                bboxes: Tensor [batch_size, n_object_queries, 4].
+                logits: Tensor [batch_size, n_object_queries, 92].
+
+            labels: List [batch_size] of dicts of keys:
+                bboxes: Tensor [n_objects_in_image, 4]
+                classes: Tensor [n_objects_in_image]
+        """
         batch_size, num_queries = predictions['logits'].shape[:-1]
 
         # TODO: wrap in no grad?
@@ -25,10 +36,14 @@ class HungarianMatcher(nn.Module):
         # Due to images containing a different number of boxes, this way you
         # generalize
         flat_boxes_pred = predictions['bboxes'].flatten(0, 1)
+        flat_boxes_pred = box_ops.box_cxcywh_to_xyxy(flat_boxes_pred)
+
         flat_boxes_labels = torch.cat([label['bboxes'] for label in labels])
+        flat_boxes_labels = box_ops.box_cxcywh_to_xyxy(flat_boxes_labels)
 
         # GIoU loss is negative as a loss because you want to maximize GIoU
         pairwise_giou_loss = -box_ops.generalized_box_iou(flat_boxes_pred, flat_boxes_labels)
+
         pairwise_l1_loss = torch.cdist(flat_boxes_pred, flat_boxes_labels, p=1)
         boxes_loss = self.lambda_giou*pairwise_giou_loss + self.lambda_l1*pairwise_l1_loss
 

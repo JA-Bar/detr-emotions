@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from detr.utils.box_ops import generalized_box_iou
+from detr.utils import box_ops
 
 
 class DETRLoss(nn.Module):
@@ -74,9 +74,12 @@ class DETRLoss(nn.Module):
 
         # compute the generalized IoU loss
         flat_boxes_pred = boxes_pred.flatten(0, 1)
-        flat_boxes_labels = torch.cat(boxes_labels)
+        flat_boxes_pred = box_ops.box_cxcywh_to_xyxy(flat_boxes_pred)
 
-        giou_loss = generalized_box_iou(flat_boxes_pred, flat_boxes_labels)
+        flat_boxes_labels = torch.cat(boxes_labels)
+        flat_boxes_labels = box_ops.box_cxcywh_to_xyxy(flat_boxes_labels)
+
+        giou_loss = box_ops.generalized_box_iou(flat_boxes_pred, flat_boxes_labels)
         giou_loss = torch.diag(giou_loss).sum()
 
         # compute the L1 loss
