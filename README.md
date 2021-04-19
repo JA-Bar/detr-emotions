@@ -10,10 +10,11 @@ and functionality.
 
 # Setup
 - Install pytorch >= 1.7
-- Run `pip3 install -r requirements.txt --force`
+- Run `pip3 install -r requirements.txt
 
-
-
+Note: 
+- The project uses a specific version of albumentations (albumentations==0.5.2), if you're
+  having attribute issues with the library, use `pip3 install albumentations==0.5.2`
 
 
 

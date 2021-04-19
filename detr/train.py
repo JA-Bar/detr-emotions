@@ -12,12 +12,11 @@ from tqdm import tqdm
 
 import detr.logs.logger as log
 
+from detr import models
 from detr.datasets import transforms
 from detr.datasets.coco_subset import CocoSubset
-from detr.models.detr import DETR
-from detr.models.losses import DETRLoss
-from detr.models.matcher import HungarianMatcher
 from detr.utils import data_utils
+from detr.utils.checkpoints import CheckpointManager
 
 
 def train(args):
@@ -57,34 +56,38 @@ def train(args):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    checkpoint_manager = CheckpointManager(args.config, args.save_every)
+
     logger.info("Loading model...")
-    model = DETR(config['dataset']['num_classes'],
-                 config['model']['dim_model'],
-                 config['model']['n_heads'],
-                 n_queries=config['model']['n_queries'])
+    model = models.DETR(config['dataset']['num_classes'],
+                        config['model']['dim_model'],
+                        config['model']['n_heads'],
+                        n_queries=config['model']['n_queries'])
+
+    optim = AdamW(model.parameters(), config['training']['lr'])  # pending
 
     if args.mode == 'pretrained':
         model.load_demo_state_dict('data/state_dicts/detr_demo.pth')
+    elif args.mode == 'checkpoint':
+        state_dict, optim_dict = checkpoint_manager.load_checkpoint('latest')
+        model.load_state_dict(state_dict)
+        optim.load_state_dict(optim_dict)
 
     model.to(device)
 
-    matcher = HungarianMatcher(config['losses']['lambda_matcher_classes'],
-                               config['losses']['lambda_matcher_giou'],
-                               config['losses']['lambda_matcher_l1'])
+    matcher = models.HungarianMatcher(config['losses']['lambda_matcher_classes'],
+                                      config['losses']['lambda_matcher_giou'],
+                                      config['losses']['lambda_matcher_l1'])
 
-    optim = AdamW(model.parameters(), config['training']['lr'])  # pending
-    loss_fn = DETRLoss(config['losses']['lambda_loss_classes'],
-                       config['losses']['lambda_loss_giou'],
-                       config['losses']['lambda_loss_l1'],
-                       config['dataset']['num_classes'])
+    loss_fn = models.DETRLoss(config['losses']['lambda_loss_classes'],
+                              config['losses']['lambda_loss_giou'],
+                              config['losses']['lambda_loss_l1'],
+                              config['dataset']['num_classes'])
 
     # writer = SummaryWriter(log_dir=Path(__file__)/'logs/tensorboard')
     # maybe image with boxes every now and then
     # maybe look into add_hparams
-
-    # add checkpoint options and pretrain option
     # add tensorboard
-    # add logging
     # add gradient accumulation
 
     logger.info("Starting training...")
@@ -92,6 +95,7 @@ def train(args):
     loss_desc = "Loss: n/a"
 
     starting_epoch = 0
+
     for epoch in range(starting_epoch, config['training']['epochs']):
         epoch_desc = f"Epoch [{epoch}/{config['training']['epochs']}]"
         for images, labels in tqdm(train_loader, f"{epoch_desc} | {loss_desc}"):
@@ -112,13 +116,17 @@ def train(args):
             loss.backward()
             optim.step()
 
+        checkpoint_manager.step(model, optim, sum(loss_hist)/len(loss_hist))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('detr_train')
 
-    parser.add_argument('--mode', default='pretrined', choices=['pretrained', 'checkpoint', 'from_scratch'])
+    parser.add_argument('--mode', default='pretrained', choices=['pretrained', 'checkpoint', 'from_scratch'])
     parser.add_argument('--config_base_path', default='configs/')
     parser.add_argument('--config', default='coco_fine_tune')
+    parser.add_argument('--save_every', type=int, default=10)
+    parser.add_argument('--eval_every', type=int, default=10)
     args = parser.parse_args()
 
     train(args)

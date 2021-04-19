@@ -74,9 +74,9 @@ def download_images(categories, coco_path, limit=10, coco_set='val'):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--categories', required=True, help="Comma separated string of category names")
     parser.add_argument('--save_path', default='')
     parser.add_argument('--coco_set', default='val', choices=['val', 'train'])
-    parser.add_argument('--categories', default='truck, boat')
     parser.add_argument('--limit', type=int, default=10)
     parser.add_argument('--keep_files', action='store_true')
     args = parser.parse_args()
@@ -93,5 +93,5 @@ if __name__ == '__main__':
 
     categories = args.categories.replace(', ', ',').split(',')
 
-    download_images(categories, save_path, args.limit)
+    download_images(categories, save_path, args.limit, args.coco_set)
     print('Coco subset downloaded!')
