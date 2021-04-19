@@ -1,4 +1,5 @@
 import argparse
+from collections import deque
 from pathlib import Path
 
 import torch
@@ -87,10 +88,13 @@ def train(args):
     # add gradient accumulation
 
     logger.info("Starting training...")
+    loss_hist = deque(maxlen=20)
+    loss_desc = "Loss: n/a"
 
     starting_epoch = 0
     for epoch in range(starting_epoch, config['training']['epochs']):
-        for images, labels in tqdm(train_loader, f"Epoch [{epoch}/{config['training']['epochs']}]"):
+        epoch_desc = f"Epoch [{epoch}/{config['training']['epochs']}]"
+        for images, labels in tqdm(train_loader, f"{epoch_desc} | {loss_desc}"):
 
             images = images.to(device)
             labels = data_utils.labels_to_device(labels, device)
@@ -101,6 +105,8 @@ def train(args):
             matching_indices = data_utils.indices_to_device(matching_indices, device)
 
             loss = loss_fn(output, labels, matching_indices)
+            loss_hist.append(loss.item())
+            loss_desc = f"Loss: {sum(loss_hist)/len(loss_hist)}"
 
             optim.zero_grad()
             loss.backward()
@@ -110,39 +116,10 @@ def train(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('detr_train')
 
-    # parser.add_argument('--target_classes', required=True)
-    # parser.add_argument('--target_classes', default="cat, dog")
-
     parser.add_argument('--mode', default='pretrined', choices=['pretrained', 'checkpoint', 'from_scratch'])
     parser.add_argument('--config_base_path', default='configs/')
     parser.add_argument('--config', default='coco_fine_tune')
-
-    # parser.add_argument('--num_classes', type=int, default=91)
-    # parser.add_argument('--coco_path', default=Path(__file__).parent/'../data/coco/')
-    # parser.add_argument('--val_split', type=float, default=0.1)
-
-    # parser.add_argument('--epochs', type=int, default=50)
-    # parser.add_argument('--batch_size', type=int, default=2)
-    # parser.add_argument('--effective_batch_size', type=int, default=32)
-
-    # parser.add_argument('--dim_model', type=int, default=256)
-    # parser.add_argument('--n_heads', type=int, default=8)
-    # parser.add_argument('--n_queries', type=int, default=100)
-
-    # parser.add_argument('--lambda_matcher_classes', type=int, default=1)
-    # parser.add_argument('--lambda_matcher_giou', type=int, default=1)
-    # parser.add_argument('--lambda_matcher_l1', type=int, default=1)
-
-    # parser.add_argument('--lambda_loss_classes', type=int, default=1)
-    # parser.add_argument('--lambda_loss_giou', type=int, default=1)
-    # parser.add_argument('--lambda_loss_l1', type=int, default=1)
-
-    # parser.add_argument('--lr', type=float, default=0.001)
-
     args = parser.parse_args()
-
-    # args.target_classes = args.target_classes.replace(', ', ',').split(',')
 
     train(args)
 
-print('hello world')
