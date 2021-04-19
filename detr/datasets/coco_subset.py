@@ -76,22 +76,30 @@ class CocoSubset(Dataset):
         with open(annotations_file) as f:
             annotations = json.load(f)
 
+        # list all classes
         idx_to_classes = {cat['id']: cat['name'] for cat in annotations['categories']}
         classes_to_idx = {name: idx for (idx, name) in idx_to_classes.items()}
 
+        # look for saved images
         saved_images = glob(str(coco_path/'images'/'*.jpg'))
         saved_images = set(img.split('/')[-1] for img in saved_images)
 
+        # make the classes into a set for faster comparisons
         target_classes = set(classes_to_idx[cat] for cat in target_classes)
 
+        # start a dict of data for images you already have
         annotation_data = {img['id']: [img] for img in annotations['images']
                            if img['file_name'] in saved_images}
 
+        # add the annotation information to the data dict for each image
         for ann in annotations['annotations']:
             img_id = ann['image_id']
             class_id = ann['category_id']
             if img_id in annotation_data and class_id in target_classes:
                 annotation_data[img_id].append(ann)
+
+        # don't include data if you only have the image information (no annotation data)
+        annotation_data = {img_id: data for img_id, data in annotation_data.items() if len(data) > 1}
 
         return annotation_data, idx_to_classes, classes_to_idx
 
