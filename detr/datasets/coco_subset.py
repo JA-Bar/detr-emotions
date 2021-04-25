@@ -45,7 +45,7 @@ class CocoSubset(Dataset):
         image_data = self.image_data[idx]
         ann_data = self.annotation_data[idx]
 
-        image = Image.open(self.coco_path/'images'/image_data['file_name'])
+        image = Image.open(self.coco_path/'images'/image_data['file_name']).convert("RGB")
         class_labels = [ann['category_id'] for ann in ann_data]
         bboxes = [ann['bbox'] for ann in ann_data]
 

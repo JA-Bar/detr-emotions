@@ -94,11 +94,13 @@ class DETR(nn.Module):
         return preds
 
     def load_demo_state_dict(self, path_to_dict):
-        if not Path(path_to_dict).exists():
+        path_to_dict = Path(path_to_dict)
+        if not path_to_dict.exists():
             print('No DETR pretrained weights found, downloading demo...')
             state_dict = torch.hub.load_state_dict_from_url(
                 url='https://dl.fbaipublicfiles.com/detr/detr_demo-da2a99e9.pth',
-                model_dir=path_to_dict,
+                model_dir=str(path_to_dict.parent),
+                file_name=str(path_to_dict.name),
                 map_location='cpu',
                 check_hash=True)
         else:

@@ -41,7 +41,7 @@ def unzip_annotations(coco_path, file_name='coco_annotations', coco_set='val', k
         annotations_file = set(glob(str(coco_path/f'annotations/instances_{coco_set}*.json')))
         files_to_clean = all_files - annotations_file
 
-        confirm = input(f"Delete files: {files_to_clean} as part of the cleanup [y/n]? ")
+        confirm = input(f"Delete files as part of the cleanup [y/n]? {files_to_clean}")
         if 'y' in confirm:
             for file in files_to_clean:
                 os.remove(file)

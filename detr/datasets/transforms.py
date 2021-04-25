@@ -18,7 +18,7 @@ def get_val_transforms():
         A.PadIfNeeded(800, 1333),
         A.CenterCrop(800, 1333),
         A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-        A.pytorch.transforms.ToTensorV2(),
+        A.pytorch.ToTensorV2(),
     ], bbox_params=A.BboxParams(format='coco', label_fields=['class_labels']))
     return transforms
 
