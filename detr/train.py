@@ -31,9 +31,11 @@ def train(args):
 
     logger.info("Loading the dataset...")
     if config['dataset']['name'] == 'coco_subset':
+        # TODO: Look into train_transforms hiding the objects
+        # Transform in such a way that this can't be the case
         train_dataset = CocoSubset(config['dataset']['coco_path'],
                                    config['dataset']['target_classes'],
-                                   train_transforms,
+                                   val_transforms,
                                    'train',
                                    config['dataset']['train_val_split'])
 
