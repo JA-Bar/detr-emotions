@@ -15,6 +15,7 @@ import detr.logs.logger as log
 from detr import models
 from detr.datasets import transforms
 from detr.datasets.coco_subset import CocoSubset
+from detr.eval import validation_loop
 from detr.utils import data_utils
 from detr.utils.checkpoints import CheckpointManager
 
@@ -88,11 +89,13 @@ def train(args):
     # maybe image with boxes every now and then
     # maybe look into add_hparams
     # add tensorboard
-    # add gradient accumulation
 
     logger.info("Starting training...")
     loss_hist = deque(maxlen=20)
     loss_desc = "Loss: n/a"
+
+    update_every_n_steps = config['training']['effective_batch_size'] // config['training']['batch_size']
+    steps = 1
 
     starting_epoch = 0
 
@@ -102,21 +105,28 @@ def train(args):
 
             images = images.to(device)
             labels = data_utils.labels_to_device(labels, device)
-            # see labels moving to gpu
 
             output = model(images)
             matching_indices = matcher(output, labels)
             matching_indices = data_utils.indices_to_device(matching_indices, device)
 
-            loss = loss_fn(output, labels, matching_indices)
-            loss_hist.append(loss.item())
+            loss = loss_fn(output, labels, matching_indices) / update_every_n_steps
+            loss_hist.append(loss.item() * update_every_n_steps)
             loss_desc = f"Loss: {sum(loss_hist)/len(loss_hist)}"
-
-            optim.zero_grad()
             loss.backward()
-            optim.step()
 
-        checkpoint_manager.step(model, optim, sum(loss_hist)/len(loss_hist))
+            if (steps % update_every_n_steps == 0):
+                optim.step()
+                optim.zero_grad()
+
+            steps += 1
+
+        checkpoint_manager.step(model, optim, sum(loss_hist) / len(loss_hist))
+
+        if (epoch % args.eval_every == 0) and epoch != 0:
+            validation_loop(model, matcher, val_loader, loss_fn, device)
+
+    checkpoint_manager.save_checkpoint(model, optim, sum(loss_hist) / len(loss_hist))
 
 
 if __name__ == '__main__':

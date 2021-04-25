@@ -17,7 +17,7 @@ def get_logger(name):
     console_handler.setFormatter(FORMATTER)
     console_handler.setLevel(logging.DEBUG)
 
-    log_path = BASE_LOG_PATH/'{:%Y-%m-%d}.log'.format(datetime.now())
+    log_path = BASE_LOG_PATH / '{:%Y-%m-%d-%H:%M:%S}.log'.format(datetime.now())
 
     file_handler = logging.FileHandler(log_path)
     file_handler.setFormatter(FORMATTER)
