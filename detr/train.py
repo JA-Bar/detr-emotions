@@ -35,7 +35,7 @@ def train(args):
         # Transform in such a way that this can't be the case
         train_dataset = CocoSubset(config['dataset']['coco_path'],
                                    config['dataset']['target_classes'],
-                                   val_transforms,
+                                   train_transforms,
                                    'train',
                                    config['dataset']['train_val_split'])
 

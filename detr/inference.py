@@ -83,6 +83,7 @@ def filter_inference_results(inference):
     Returns:
         Dicts of keys 'bboxes' and 'classes' containing lists of size batch_size with the inferences.
     """
+
     bboxes = inference['bboxes']  # [batch, 100, 4]
 
     classes = inference['logits']  # [batch, 100, 92]
@@ -97,6 +98,7 @@ def filter_inference_results(inference):
     return {'bboxes': bboxes, 'classes': classes}
 
 
+# TODO: Move to box ops
 def denormalize_coords(coords, width, height):
     return [(x*width, y*height, w*width, h*height) for (x, y, w, h) in coords]
 
@@ -127,8 +129,6 @@ if __name__ == '__main__':
     parser.add_argument('--image_save_path', default='data/examples/cat_dog_inference.jpg')
 
     args = parser.parse_args()
-
-    args.image_path = '../data/coco/images/000000047121.jpg'
 
     with open(args.model_config, 'r') as f:
         config = yaml.safe_load(f)
