@@ -1,0 +1,147 @@
+import argparse
+from pathlib import Path
+
+import cv2
+import numpy as np
+import torch
+import yaml
+from PIL import Image
+
+import albumentations as A
+import albumentations.pytorch.transforms
+
+from detr.models.detr import DETR
+
+
+def inference_on_image(model, image_path, save_path=None, target_w=1333, target_h=800):
+    image = Image.open(image_path)
+
+    image_w_h_ratio = image.width / image.height
+    target_w_h_ratio = target_w / target_h
+
+    # Shrink the image down so that it fits inside of a (target_w, target_h) rectangle
+    # while keeking the original aspect ratio, fill the remaining space with zeros
+    if image_w_h_ratio >= target_w_h_ratio:
+        shrink_ratio = target_w / image.width
+        resized_w = int(image.width * shrink_ratio)
+        resized_h = int(image.height * shrink_ratio)
+        resized_image = image.resize((resized_w, resized_h))
+    else:
+        shrink_ratio = target_h / image.height
+        resized_h = int(image.height * shrink_ratio)
+        resized_w = int(image.width * shrink_ratio)
+        resized_image = image.resize((resized_w, resized_h))
+
+    inference_transform = A.Compose([
+        A.PadIfNeeded(target_h, target_w, value=0, border_mode=0),
+        A.pytorch.ToTensorV2(),
+    ])
+
+    tensor_image = inference_transform(image=np.array(resized_image))
+    tensor_image = torch.unsqueeze(tensor_image, 0)
+
+    # Compute the inference
+    model.eval()
+    with torch.no_grad():
+        inference = model(tensor_image)
+
+    inference = filter_inference_results(inference)
+
+    # Grab the first element of the list because the inference is over a single image
+    coords = inference['bboxes'][0]
+    classes = inference['classes'][0]
+
+    # The model outputs yolo format images, turn them into (x1, y1, x2, y2)
+    coords = denormalize_coords(coords, target_w, target_h)
+    coords = xywh_to_x1y1x2y2(coords)
+
+    # Shift coordinates so that the origin is with respect to the inner image, not the padding
+    shifted_coords = shift_coords(coords, -(target_w-new_w)/2, -(target_h-new_h)/2)
+
+    # Then return the coordinates to the scale of the original image
+    scaled_coords = scale_coords(shifted_coords, 1/shrink_ratio, 1/shrink_ratio)
+
+    if save_path is not None:
+        canvas = np.array(image)
+        for c in scaled_coords:
+            cv2.rectangle(canvas, (int(c[0]), int(c[1])), (int(c[2]), int(c[3])), (0, 0, 255))
+
+        save_path = Path(save_path)
+        cv2.imwrite(str(save_path.with_suffix('.jpg')), canvas)
+
+    return {'coords': scaled_coords, 'classes': classes}
+
+
+def filter_inference_results(inference):
+    """Filter inference results to not contain (no_object) classes.
+
+    Args:
+        inference: Dictionary of results.
+                   {'bboxes': Tensor[batch_size, n_queries, 4],
+                    'logits': Tensor[batch_size, n_queries, n_classes]}
+
+    Returns:
+        Dicts of keys 'bboxes' and 'classes' containing lists of size batch_size with the inferences.
+    """
+    bboxes = inference['bboxes']  # [batch, 100, 4]
+
+    classes = inference['logits']  # [batch, 100, 92]
+    no_obj_index = classes.size(-1) - 1
+
+    classes = classes.softmax(-1)
+    _, classes = torch.max(classes, dim=-1)  # [batch, 100]
+
+    classes = [c[c!=no_obj_index].numpy() for c in classes]
+    bboxes = [b[c!=no_obj_index].numpy() for (c, b) in zip(classes, bboxes)]
+
+    return {'bboxes': bboxes, 'classes': classes}
+
+
+def denormalize_coords(coords, width, height):
+    return [(x*width, y*height, w*width, h*height) for (x, y, w, h) in coords]
+
+
+def normalize_coords(coords, width, height):
+    return [(x/width, y/height, w/width, h/height) for (x, y, w, h) in coords]
+
+
+def xywh_to_x1y1x2y2(coords):
+    return [(x-w/2, y-h/2, x+w/2, y+w/2) for (x, y, w, h) in coords]
+
+
+def shift_coords(coords, x_shift=0, y_shift=0):
+    return [(x1+x_shift, y1+y_shift, x2+x_shift, y2+y_shift)
+            for (x1, y1, x2, y2) in coords]
+
+
+def scale_coords(coords, x_scale=1, y_scale=1):
+    return [(x1*x_scale, y1*y_scale, x2*x_scale, y2*y_scale)
+            for (x1, y1, x2, y2) in coords]
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model_weights', required=True)
+    parser.add_argument('--model_config', default='configs/coco_fine_rune.yaml')
+    parser.add_argument('--image_path', default='data/examples/cat_dog.jpg')
+    parser.add_argument('--image_save_path', default='data/examples/cat_dog_inference.jpg')
+
+    args = parser.parse_args()
+
+    args.image_path = '../data/coco/images/000000047121.jpg'
+
+    with open(args.model_config, 'r') as f:
+        config = yaml.safe_load(f)
+
+    model = DETR(config['dataset']['num_classes'],
+                 config['model']['dim_model'],
+                 config['model']['n_heads'],
+                 n_queries=config['model']['n_queries'])
+
+    if args.model_weights == 'demo':
+        model.load_demo_state_dict('data/state_dicts/detr_demo.pth')
+    else:
+        model.load_state_dict(args.model_weights)
+
+    inference_on_image(args.image_path, model)
+
