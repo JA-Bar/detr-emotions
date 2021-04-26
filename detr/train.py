@@ -103,8 +103,8 @@ def train(args):
 
     for epoch in range(starting_epoch, config['training']['epochs']):
         epoch_desc = f"Epoch [{epoch}/{config['training']['epochs']}]"
-        for images, labels in tqdm(train_loader, f"{epoch_desc} | {loss_desc}"):
 
+        for images, labels in tqdm(train_loader, f"{epoch_desc} | {loss_desc}"):
             images = images.to(device)
             labels = data_utils.labels_to_device(labels, device)
 

@@ -30,8 +30,6 @@ class HungarianMatcher(nn.Module):
         """
         batch_size, num_queries = predictions['logits'].shape[:-1]
 
-        # TODO: wrap in no grad?
-
         # We flatten the batch dimension to make the computations easier
         # Due to images containing a different number of boxes, this way you
         # generalize
