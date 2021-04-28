@@ -1,4 +1,5 @@
 import json
+import random
 from glob import glob
 from pathlib import Path
 
@@ -16,7 +17,7 @@ class CocoSubset(Dataset):
                  target_classes,
                  transforms=None,
                  mode='train',
-                 val_split=0.1):
+                 train_val_split=0.8):
         super().__init__()
 
         coco_path = Path(coco_path)
@@ -30,11 +31,15 @@ class CocoSubset(Dataset):
         # The split is always going to be deterministic, the first n go to train,
         # while the last m go to val, better implementation pending
         n_data = len(data)
-        n_split = int(n_data * (1-val_split))
+        n_split = int(n_data * (train_val_split))
+
+        data_values = list(data.values())
+        random.shuffle(data_values)
+
         if mode == 'train':
-            data = list(data.values())[:n_split]
+            data = data_values[:n_split]
         else:
-            data = list(data.values())[n_split:]
+            data = data_values[n_split:]
 
         self.image_data = [d[0] for d in data]
         self.annotation_data = [d[1:] for d in data]
