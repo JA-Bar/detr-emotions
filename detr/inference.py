@@ -34,10 +34,11 @@ def inference_on_image(model, image_path, save_path=None, target_w=1333, target_
 
     inference_transform = A.Compose([
         A.PadIfNeeded(target_h, target_w, value=0, border_mode=0),
+        A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
         A.pytorch.ToTensorV2(),
     ])
 
-    tensor_image = inference_transform(image=np.array(resized_image))
+    tensor_image = inference_transform(image=np.array(resized_image))['image']
     tensor_image = torch.unsqueeze(tensor_image, 0)
 
     # Compute the inference
@@ -56,18 +57,21 @@ def inference_on_image(model, image_path, save_path=None, target_w=1333, target_
     coords = xywh_to_x1y1x2y2(coords)
 
     # Shift coordinates so that the origin is with respect to the inner image, not the padding
-    shifted_coords = shift_coords(coords, -(target_w-new_w)/2, -(target_h-new_h)/2)
+    shifted_coords = shift_coords(coords, -(target_w-resized_w)/2, -(target_h-resized_h)/2)
 
     # Then return the coordinates to the scale of the original image
     scaled_coords = scale_coords(shifted_coords, 1/shrink_ratio, 1/shrink_ratio)
 
     if save_path is not None:
         canvas = np.array(image)
+        canvas = cv2.cvtColor(canvas, cv2.COLOR_RGB2BGR)
         for c in scaled_coords:
             cv2.rectangle(canvas, (int(c[0]), int(c[1])), (int(c[2]), int(c[3])), (0, 0, 255))
 
         save_path = Path(save_path)
         cv2.imwrite(str(save_path.with_suffix('.jpg')), canvas)
+
+        print('Image saved at:', str(save_path.with_suffix('.jpg')))
 
     return {'coords': scaled_coords, 'classes': classes}
 
@@ -92,10 +96,10 @@ def filter_inference_results(inference):
     classes = classes.softmax(-1)
     _, classes = torch.max(classes, dim=-1)  # [batch, 100]
 
-    classes = [c[c!=no_obj_index].numpy() for c in classes]
-    bboxes = [b[c!=no_obj_index].numpy() for (c, b) in zip(classes, bboxes)]
+    filtered_classes = [c[c!=no_obj_index].numpy() for c in classes]
+    filtered_bboxes = [b[c!=no_obj_index].numpy() for (c, b) in zip(classes, bboxes)]
 
-    return {'bboxes': bboxes, 'classes': classes}
+    return {'bboxes': filtered_bboxes, 'classes': filtered_classes}
 
 
 # TODO: Move to box ops
@@ -124,7 +128,7 @@ def scale_coords(coords, x_scale=1, y_scale=1):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_weights', required=True)
-    parser.add_argument('--model_config', default='configs/coco_fine_rune.yaml')
+    parser.add_argument('--model_config', default='configs/coco_fine_tune.yaml')
     parser.add_argument('--image_path', default='data/examples/cat_dog.jpg')
     parser.add_argument('--image_save_path', default='data/examples/cat_dog_inference.jpg')
 
@@ -141,7 +145,9 @@ if __name__ == '__main__':
     if args.model_weights == 'demo':
         model.load_demo_state_dict('data/state_dicts/detr_demo.pth')
     else:
-        model.load_state_dict(args.model_weights)
+        state_dict = torch.load(args.model_weights)['state_dict']
+        model.load_state_dict(state_dict)
 
-    inference_on_image(args.image_path, model)
+    inference_on_image(model, args.image_path, args.save_path)
+    print(f'Inference done and saved at {args.image_save_path}')
 
