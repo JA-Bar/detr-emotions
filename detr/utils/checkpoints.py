@@ -7,6 +7,7 @@ import torch
 
 
 class CheckpointManager:
+    """Class to handle model, optimizer and loss checkpoints."""
     # saves checkpoint with the format: ConfigName_Epoch_date.pt
     def __init__(self, config_name, save_every=5, current_epoch=0, save_path='data/state_dicts'):
         self.config_name = config_name

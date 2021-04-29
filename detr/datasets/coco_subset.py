@@ -18,6 +18,27 @@ class CocoSubset(Dataset):
                  transforms=None,
                  mode='train',
                  train_val_split=0.8):
+        """Dataset built on a subset of coco.
+
+        Read the existing saved images corresponsing to coco, pair them with annotation data,
+        and build a dataset including the classes of 'target_classes'.
+
+        Args:
+            coco_path (str): Base directory that holds coco annotations and images.
+            target_classes (list[str]): Classes to include in the dataset. Their name must
+                match the official name defined by the coco dataset.
+            transforms (Albumentation Transform): Albumentation transforms that will be applied
+                to the images and annotations.
+            mode (str): Either 'train' or 'val', define the split that will be used to separate the data.
+            train_val_split (str): Number between 0 and 1 that will define the percentage of the data that will
+                be used for the 'train' split, the rest (1-train_val_split) will go to 'val'.
+
+        Returns:
+            Tuple of (image, labels), where image is a PIL Image with the transformation applied (usually a Tensor),
+            and labels is a dictionary with theys:
+                'bboxes': Tensor of size [n_objects_in_image, 4] containing the bounding boxes of objects.
+                'classes': Tensor of size [n_objects_in_image] containing the corresponsing class id.
+        """
         super().__init__()
 
         coco_path = Path(coco_path)
@@ -34,7 +55,7 @@ class CocoSubset(Dataset):
         n_split = int(n_data * (train_val_split))
 
         data_values = list(data.values())
-        random.shuffle(data_values)
+        random.Random(42).shuffle(data_values)
 
         if mode == 'train':
             data = data_values[:n_split]

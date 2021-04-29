@@ -26,6 +26,23 @@ def denormalize_tensor_image(image, mean='imagenet', std='imagenet', pillow_outp
 
 
 def collate_fn(batch):
+    """Batches a dataset that returns instances of (image, {'label': Tensor, ...}).
+
+    Due to images having different number of objects within them, labels can't simply be
+    batched into a Tensor of shape [n_instances, n_objects, feature_size], but images can.
+    This function batches images as a Tensor and labels as a dict of lists of Tensors.
+
+    Args:
+        batch: List of instances to be batched together. instances must be in the form:
+            (Tensor, {'label_key': Tensor})
+    Returns:
+        Batched instances as a tuple (images, labels), where images is a Tensor of shape
+        [n_instances, channels, height, width], and labels is a dict with keys:
+            'bboxes': Containing a list of length [n_instances], where each element in
+                    the list is a Tensor of shape [n_objects_in_the_image, 4].
+            'classes': Containing a list of length [n_instances], where each element in
+                    the list is a Tensor of shape [n_objects_in_the_image]
+    """
     images, labels = zip(*batch)
     images = torch.cat([img.unsqueeze(0) for img in images])
     return images, labels
