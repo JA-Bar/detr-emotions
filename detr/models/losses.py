@@ -6,12 +6,14 @@ from detr.utils import box_ops
 
 
 class DETRLoss(nn.Module):
-    def __init__(self, lambda_classes, lambda_giou, lambda_l1, num_classes):
+    def __init__(self, lambda_classes, lambda_giou, lambda_l1, num_classes, no_class_weight=0.1):
         super().__init__()
         self.lambda_classes = lambda_classes
         self.lambda_giou = lambda_giou
         self.lambda_l1 = lambda_l1
+
         self.no_class_index = num_classes
+        self.no_class_weight = no_class_weight
 
     def forward(self, predictions, labels, indices):
         """Compute the loss.
@@ -63,7 +65,7 @@ class DETRLoss(nn.Module):
 
         # down-weight the no-object class to account for class imbalance
         classes_weights = torch.ones((self.no_class_index+1,), device=device)
-        classes_weights[self.no_class_index] = 0.1
+        classes_weights[self.no_class_index] = self.no_class_weight
 
         class_loss = F.cross_entropy(
             classes_pred.transpose(1, 2),

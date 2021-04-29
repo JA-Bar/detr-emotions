@@ -76,6 +76,18 @@ def train(args):
         model.load_state_dict(state_dict)
         optim.load_state_dict(optim_dict)
 
+    if args.train_section == 'head':
+        to_train = ['ffn']
+    elif args.train_section == 'backbone':
+        to_train = ['backbone', 'conv']
+    else:
+        to_train = ['ffn', 'backbone', 'conv', 'transformer', 'row', 'col', 'object']
+
+    # Freeze everything but the modules that are in to_train
+    for name, param in model.named_parameters():
+        if not any(map(lambda x: name.startswith(x), to_train)):
+            param.requires_grad = False
+
     model.to(device)
 
     matcher = models.HungarianMatcher(config['losses']['lambda_matcher_classes'],
@@ -85,7 +97,8 @@ def train(args):
     loss_fn = models.DETRLoss(config['losses']['lambda_loss_classes'],
                               config['losses']['lambda_loss_giou'],
                               config['losses']['lambda_loss_l1'],
-                              config['dataset']['num_classes'])
+                              config['dataset']['num_classes'],
+                              config['losses']['no_class_weight'])
 
     # writer = SummaryWriter(log_dir=Path(__file__)/'logs/tensorboard')
     # maybe image with boxes every now and then
@@ -93,7 +106,7 @@ def train(args):
     # add tensorboard
 
     logger.info("Starting training...")
-    loss_hist = deque(maxlen=20)
+    loss_hist = deque()
     loss_desc = "Loss: n/a"
 
     update_every_n_steps = config['training']['effective_batch_size'] // config['training']['batch_size']
@@ -101,6 +114,8 @@ def train(args):
 
     starting_epoch = 0
 
+    # TODO: Loss should be of epoch, not running mean
+    # tqdm desc isn't being updated at every step
     for epoch in range(starting_epoch, config['training']['epochs']):
         epoch_desc = f"Epoch [{epoch}/{config['training']['epochs']}]"
 
@@ -114,7 +129,6 @@ def train(args):
 
             loss = loss_fn(output, labels, matching_indices) / update_every_n_steps
             loss_hist.append(loss.item() * update_every_n_steps)
-            loss_desc = f"Loss: {sum(loss_hist)/len(loss_hist)}"
             loss.backward()
 
             if (steps % update_every_n_steps == 0):
@@ -123,7 +137,10 @@ def train(args):
 
             steps += 1
 
-        checkpoint_manager.step(model, optim, sum(loss_hist) / len(loss_hist))
+        checkpoint_manager.step(model, optim, sum(loss_hist)/len(loss_hist))
+
+        loss_desc = f"Loss: {sum(loss_hist)/len(loss_hist)}"
+        loss_hist.clear()
 
         if (epoch % args.eval_every == 0) and epoch != 0:
             validation_loop(model, matcher, val_loader, loss_fn, device)
@@ -135,8 +152,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('detr_train')
 
     parser.add_argument('--mode', default='pretrained', choices=['pretrained', 'checkpoint', 'from_scratch'])
-    parser.add_argument('--config_base_path', default='configs/')
+    parser.add_argument('--train_section', default='head', choices=['head', 'backbone', 'all'])
     parser.add_argument('--config', default='coco_fine_tune')
+    parser.add_argument('--config_base_path', default='configs/')
     parser.add_argument('--save_every', type=int, default=10)
     parser.add_argument('--eval_every', type=int, default=10)
     args = parser.parse_args()

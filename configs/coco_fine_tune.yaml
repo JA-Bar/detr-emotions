@@ -24,6 +24,8 @@ losses:
     lambda_loss_giou: 2
     lambda_loss_l1: 5
 
+    no_class_weight: 0.001
+
 training:
     epochs: 50
     batch_size: 2
