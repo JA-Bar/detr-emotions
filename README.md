@@ -55,6 +55,14 @@ The requirements are:
 Training is done by calling `python -m detr.train`, use the `--help` flag to see options, but some of the possibilities
 are: training just a section of the model, checkpoint interval, and config used.
 
+### Inference
+
+An inference script is provided for easier interface and visualization of the model. Inference on an image can
+be performed by calling `python -m detr.inference` and providing the path to the model weights, the input image,
+and the location under which the output image will be saved, use the `--help` flag for more details.
+
+
+
 
 [1]: https://arxiv.org/abs/2005.12872
 [2]: https://github.com/facebookresearch/detr
