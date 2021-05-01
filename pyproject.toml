@@ -5,7 +5,7 @@ description = "Reimplementation of FAIR's DEtection TRansformer simplified model
 authors = ["Juan Barajas <jbperches@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.10"
+python = ">=3.7,<3.10"
 torch = "^1.8.1"
 requests = "^2.25.1"
 tqdm = "^4.60.0"

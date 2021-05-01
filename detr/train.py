@@ -67,6 +67,7 @@ def train(args):
                         config['model']['n_heads'],
                         n_queries=config['model']['n_queries'])
 
+    # TODO: implement scheduler
     optim = AdamW(model.parameters(), config['training']['lr'])  # pending
 
     if args.mode == 'pretrained':

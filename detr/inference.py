@@ -148,6 +148,5 @@ if __name__ == '__main__':
         state_dict = torch.load(args.model_weights)['state_dict']
         model.load_state_dict(state_dict)
 
-    inference_on_image(model, args.image_path, args.save_path)
-    print(f'Inference done and saved at {args.image_save_path}')
+    inference_on_image(model, args.image_path, args.image_save_path)
 
