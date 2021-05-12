@@ -86,7 +86,7 @@ def train(args):
 
     # Freeze everything but the modules that are in to_train
     for name, param in model.named_parameters():
-        if not any(map(lambda x: name.startswith(x), to_train)):
+        if not any(map(name.startswith, to_train)):
             param.requires_grad = False
 
     model.to(device)
@@ -132,7 +132,7 @@ def train(args):
             loss_hist.append(loss.item() * update_every_n_steps)
             loss.backward()
 
-            if (steps % update_every_n_steps == 0):
+            if steps % update_every_n_steps == 0:
                 optim.step()
                 optim.zero_grad()
 
