@@ -104,7 +104,6 @@ def train(args):
     # writer = SummaryWriter(log_dir=Path(__file__)/'logs/tensorboard')
     # maybe image with boxes every now and then
     # maybe look into add_hparams
-    # add tensorboard
 
     logger.info("Starting training...")
     loss_hist = deque()
@@ -113,10 +112,8 @@ def train(args):
     update_every_n_steps = config['training']['effective_batch_size'] // config['training']['batch_size']
     steps = 1
 
-    starting_epoch = 0
+    starting_epoch = checkpoint_manager.current_epoch
 
-    # TODO: Loss should be of epoch, not running mean
-    # tqdm desc isn't being updated at every step
     for epoch in range(starting_epoch, config['training']['epochs']):
         epoch_desc = f"Epoch [{epoch}/{config['training']['epochs']}]"
 
@@ -138,7 +135,7 @@ def train(args):
 
             steps += 1
 
-        checkpoint_manager.step(model, optim, sum(loss_hist)/len(loss_hist))
+        checkpoint_manager.step(model, optim, sum(loss_hist) / len(loss_hist))
 
         loss_desc = f"Loss: {sum(loss_hist)/len(loss_hist)}"
         loss_hist.clear()
