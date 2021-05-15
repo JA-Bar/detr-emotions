@@ -4,9 +4,10 @@ import os
 import zipfile
 from pathlib import Path
 
+import requests
+import yaml
 from pycocotools.coco import COCO
 from tqdm import tqdm
-import requests
 
 
 def download_annotations(coco_path, file_name='coco_annotations'):
@@ -74,12 +75,17 @@ def download_images(categories, coco_path, limit=10, coco_set='val'):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--categories', required=True, help="Comma separated string of category names")
+    parser.add_argument('--config', default='coco_fine_tune')
+    parser.add_argument('--config_base_path', default='configs/')
     parser.add_argument('--save_path', default='')
     parser.add_argument('--coco_set', default='val', choices=['val', 'train'])
     parser.add_argument('--limit', type=int, default=10)
     parser.add_argument('--keep_files', action='store_true')
+
     args = parser.parse_args()
+
+    with open(Path(args.config_base_path, args.config).with_suffix(".yaml"), 'r') as f:
+        config = yaml.safe_load(f)
 
     save_path = args.save_path
     if not args.save_path:
@@ -91,7 +97,7 @@ if __name__ == '__main__':
         download_annotations(save_path)
         unzip_annotations(save_path, coco_set=args.coco_set, keep_files=args.keep_files)
 
-    categories = args.categories.replace(', ', ',').split(',')
+    categories = config['dataset']['target_classes']
 
     download_images(categories, save_path, args.limit, args.coco_set)
     print('Coco subset downloaded!')
