@@ -38,7 +38,7 @@ As previously mentioned, the project provides a way to download a subset of COCO
 In order to facilitate this, under the config file `coco_fine_tune.yaml` change the classes you are interested
 in under the key `target_classes`, with the name of the classes as they appear on the official [COCO page][3].
 
-Once your target classes are defined, you can then run `python data/download_coco_subset.py` with flags such as
+Once your target classes are defined, you can then run `python -m data/download_coco_subset.py` with flags such as
 `--limit` to define how many images per class will be downloaded.
 
 The given dataset that interprets this information is `detr.datasets.CocoSubset`, but you may
