@@ -65,7 +65,8 @@ def train(args):
     model = models.DETR(config['dataset']['num_classes'],
                         config['model']['dim_model'],
                         config['model']['n_heads'],
-                        n_queries=config['model']['n_queries'])
+                        n_queries=config['model']['n_queries'],
+                        head_type=config['model']['head_type'])
 
     # TODO: implement scheduler
     optim = AdamW(model.parameters(), config['training']['lr'])  # pending

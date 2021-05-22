@@ -10,11 +10,12 @@ from torchvision.models import resnet50
 class FeedForwardNetwork(nn.Module):
     def __init__(self, dim_model, num_classes):
         super().__init__()
+
         self.fc1_bbox = nn.Linear(dim_model, dim_model)
         self.fc2_bbox = nn.Linear(dim_model, dim_model)
         self.fc3_bbox = nn.Linear(dim_model, 4)
 
-        self.fc_logits = nn.Linear(dim_model, num_classes+1)
+        self.fc_logits = nn.Linear(dim_model, num_classes + 1)
 
     def forward(self, x):
         bbox_out = self.fc1_bbox(x)
@@ -31,6 +32,19 @@ class FeedForwardNetwork(nn.Module):
         return bbox_out, logits_out
 
 
+class SimpleFeedForwardNetwork(nn.Module):
+    def __init__(self, dim_model, num_classes):
+        super().__init__()
+
+        self.linear_class = nn.Linear(dim_model, num_classes + 1)
+        self.linear_bbox = nn.Linear(dim_model, 4)
+
+    def forward(self, x):
+        logits_out = self.linear_class(x)
+        bbox_out = self.linear_bbox(x)
+        return bbox_out, logits_out
+
+
 class DETR(nn.Module):
     def __init__(self,
                  num_classes,
@@ -38,8 +52,10 @@ class DETR(nn.Module):
                  n_heads=8,
                  n_encoder_layers=6,
                  n_decoder_layers=6,
-                 n_queries=100):
+                 n_queries=100,
+                 head_type='simple'):
         super().__init__()
+
         # initialize resnet and remove the last two layers (avgpool and fc)
         # reduction in spatial dimensionality is Wo, Ho -> Wo/32, Ho/32
         # output channels are 2048
@@ -58,10 +74,13 @@ class DETR(nn.Module):
         # positional embeddings are learnt, the size 50 is due to the assumption that
         # no feature map will have more than 50 rows/cols, considering the backbone
         # has a reduction of 32, no original image should be larger than 1600 px
-        self.row_pos_embed = nn.Parameter(torch.rand(50, dim_model//2))
-        self.col_pos_embed = nn.Parameter(torch.rand(50, dim_model//2))
+        self.row_pos_embed = nn.Parameter(torch.rand(50, dim_model // 2))
+        self.col_pos_embed = nn.Parameter(torch.rand(50, dim_model // 2))
 
-        self.ffn = FeedForwardNetwork(dim_model, num_classes)
+        if head_type == 'simple':
+            self.ffn = SimpleFeedForwardNetwork(dim_model, num_classes)
+        else:
+            self.ffn = FeedForwardNetwork(dim_model, num_classes)
 
     def forward(self, x):
         features = self.backbone(x)  # [batch, 2048, h, w]
@@ -110,9 +129,21 @@ class DETR(nn.Module):
             'query_pos': 'object_queries',
             'row_embed': 'row_pos_embed',
             'col_embed': 'col_pos_embed',
+            'linear_class': 'ffn.linear_class',
+            'linear_bbox': 'ffn.linear_bbox',
         }
-        for old_name, new_name in name_changes.items():
-            state_dict[new_name] = state_dict[old_name]
-            state_dict.pop(old_name)
+
+        # explicit conversion to list is necessary because keys change during iteration
+        for name in list(state_dict.keys()):
+            if '.' in name:
+                name_prefix = name.split('.')[0]
+            else:
+                name_prefix = name
+
+            if name_prefix in name_changes:
+                new_name = name.replace(name_prefix, name_changes[name_prefix])
+                state_dict[new_name] = state_dict[name]
+                state_dict.pop(name)
+
         self.load_state_dict(state_dict, strict=False)
 

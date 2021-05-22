@@ -10,6 +10,7 @@ dataset:
     target_classes: ["dog", "cat", "person"]
 
 model:
+    head_type: 'simple'  # 'simple' or 'complex'
     dim_model: 256
     n_heads: 8
     n_queries: 100
