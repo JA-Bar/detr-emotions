@@ -41,7 +41,7 @@ class SimpleFeedForwardNetwork(nn.Module):
 
     def forward(self, x):
         logits_out = self.linear_class(x)
-        bbox_out = self.linear_bbox(x)
+        bbox_out = self.linear_bbox(x).sigmoid()
         return bbox_out, logits_out
 
 
@@ -93,14 +93,13 @@ class DETR(nn.Module):
         col_pos_embed = self.col_pos_embed[:width]
         col_pos_embed = col_pos_embed.unsqueeze(0).repeat(height, 1, 1)  # [h, w, dim_model//2]
 
-        pos_embed = torch.cat([row_pos_embed, col_pos_embed], dim=-1)  # [h, w, dim_model]
+        pos_embed = torch.cat([col_pos_embed, row_pos_embed], dim=-1)  # [h, w, dim_model]
         pos_embed = pos_embed.flatten(0, 1).unsqueeze(1)  # [h*w, 1, dim_model]
 
-        features = features.flatten(2, 3)  # [batch, dim_model, h*w]
-        features = features.permute(2, 0, 1) + pos_embed  # [h*w, batch, dim_model]
+        features = features.flatten(2)  # [batch, dim_model, h*w]
+        features = 0.1 * features.permute(2, 0, 1) + pos_embed  # [h*w, batch, dim_model]
 
-        # TODO: check error: the batch number of src and tgt must be equal
-        object_queries = self.object_queries.unsqueeze(1).repeat(1, batch_size, 1)
+        object_queries = self.object_queries.unsqueeze(1)
         output_embedding = self.transformer(features, object_queries)  # [n_queries, batch, dim_model]
 
         pred_bbox, pred_logits = self.ffn(output_embedding.permute(1, 0, 2))
