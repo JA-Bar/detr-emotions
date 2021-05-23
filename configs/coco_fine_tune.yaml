@@ -1,7 +1,7 @@
 dataset:
     # mandatory dataset options
     name: "coco_subset"
-    num_classes: 91  # your highest class index + 1
+    num_classes: 91  # your highest class index + 1, 91 in case of coco
     train_val_split: 0.8
 
     # options depending on your dataset

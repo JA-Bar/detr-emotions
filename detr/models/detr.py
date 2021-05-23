@@ -99,7 +99,7 @@ class DETR(nn.Module):
         features = features.flatten(2)  # [batch, dim_model, h*w]
         features = 0.1 * features.permute(2, 0, 1) + pos_embed  # [h*w, batch, dim_model]
 
-        object_queries = self.object_queries.unsqueeze(1)
+        object_queries = self.object_queries.unsqueeze(1).repeat(1, batch_size, 1)
         output_embedding = self.transformer(features, object_queries)  # [n_queries, batch, dim_model]
 
         pred_bbox, pred_logits = self.ffn(output_embedding.permute(1, 0, 2))
