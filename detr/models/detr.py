@@ -59,12 +59,14 @@ class DETR(nn.Module):
         # initialize resnet and remove the last two layers (avgpool and fc)
         # reduction in spatial dimensionality is Wo, Ho -> Wo/32, Ho/32
         # output channels are 2048
-        # TODO: freeze batch norm
         self.backbone = resnet50(pretrained=False)
         self.backbone = nn.Sequential(OrderedDict(
             (name, child) for (name, child) in self.backbone.named_children()
             if name not in ['fc', 'avgpool']
         ))
+
+        # use the running stats of the backbone's batchnorm layers
+        self.backbone.eval()
 
         self.conv = nn.Conv2d(2048, dim_model, kernel_size=1)
         self.transformer = nn.Transformer(dim_model, n_heads, n_encoder_layers, n_decoder_layers)

@@ -23,6 +23,10 @@ def validation_loop(model, matcher, val_loader, loss_fn, device):
             loss_hist.append(loss.item())
 
     model.train()
+
+    # revert the previous line only for the model's backbone, freezing the batchnorm layers
+    model.backbone.eval()
+
     val_loss = sum(loss_hist) / len(loss_hist)
     print("Validation loss: ", val_loss)
 
