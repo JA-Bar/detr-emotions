@@ -72,8 +72,8 @@ def inference_on_image(model, image_path, save_path=None, target_w=1333, target_
                 str(classes[i].item()),
                 (int(c[0]), int(c[1])),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                1,
-                (0, 255, 0)
+                1.2,
+                (255, 0, 0)
             )
 
         save_path = Path(save_path)

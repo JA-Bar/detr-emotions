@@ -1,5 +1,7 @@
 # Simplified DETR: End-to-End Object Detection with Transformers
 
+![image](./data/examples/cat_dog_inference.jpg)
+
 This is a reimplementation of the simplest model described in [End-to-End Object Detection with Transformers][1]
 by Carion, Nicolas, et al. at Facebook AI Research. Code defining this model can be found
 on their official repository's colab notebooks, but no training loop is given. This repo aims
