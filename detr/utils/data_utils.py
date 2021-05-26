@@ -37,11 +37,10 @@ def collate_fn(batch):
             (Tensor, {'label_key': Tensor})
     Returns:
         Batched instances as a tuple (images, labels), where images is a Tensor of shape
-        [n_instances, channels, height, width], and labels is a dict with keys:
-            'bboxes': Containing a list of length [n_instances], where each element in
-                    the list is a Tensor of shape [n_objects_in_the_image, 4].
-            'classes': Containing a list of length [n_instances], where each element in
-                    the list is a Tensor of shape [n_objects_in_the_image]
+        [n_instances, channels, height, width], and labels is a list of size n_instances
+        of dicts with keys:
+            'bboxes': Containing a Tensor of shape [n_objects_in_the_image, 4].
+            'classes': Containing a Tensor of shape [n_objects_in_the_image]
     """
     images, labels = zip(*batch)
     images = torch.cat([img.unsqueeze(0) for img in images])

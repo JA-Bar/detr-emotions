@@ -65,8 +65,16 @@ def inference_on_image(model, image_path, save_path=None, target_w=1333, target_
     if save_path is not None:
         canvas = np.array(image)
         canvas = cv2.cvtColor(canvas, cv2.COLOR_RGB2BGR)
-        for c in scaled_coords:
+        for i, c in enumerate(scaled_coords):
             cv2.rectangle(canvas, (int(c[0]), int(c[1])), (int(c[2]), int(c[3])), (0, 0, 255))
+            cv2.putText(
+                canvas,
+                str(classes[i].item()),
+                (int(c[0]), int(c[1])),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (0, 255, 0)
+            )
 
         save_path = Path(save_path)
         cv2.imwrite(str(save_path.with_suffix('.jpg')), canvas)
