@@ -90,8 +90,8 @@ class DETRLoss(nn.Module):
         flat_boxes_pred = box_ops.box_cxcywh_to_xyxy(boxes_pred)
         flat_boxes_labels = box_ops.box_cxcywh_to_xyxy(boxes_labels)
 
-        giou_loss = box_ops.generalized_box_iou(flat_boxes_pred, flat_boxes_labels)
-        giou_loss = torch.diag(giou_loss).sum()
+        giou_loss = 1 - box_ops.generalized_box_iou(flat_boxes_pred, flat_boxes_labels)
+        giou_loss = torch.diag(giou_loss).sum() / boxes_labels.size(0)
 
         # compute the L1 loss
         l1_loss = F.l1_loss(flat_boxes_pred, flat_boxes_labels)
