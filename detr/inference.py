@@ -11,6 +11,8 @@ import albumentations as A
 import albumentations.pytorch.transforms
 
 from detr.models.detr import DETR
+from detr.datasets import transforms
+from detr.utils import data_utils
 
 
 def inference_on_image(model, image_path, save_path=None, target_w=1333, target_h=800):
@@ -35,7 +37,7 @@ def inference_on_image(model, image_path, save_path=None, target_w=1333, target_
     inference_transform = A.Compose([
         A.PadIfNeeded(target_h, target_w, value=0, border_mode=0),
         A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-        A.pytorch.ToTensorV2(),
+        A.pytorch.ToTensor(),
     ])
 
     tensor_image = inference_transform(image=np.array(resized_image))['image']
@@ -54,7 +56,6 @@ def inference_on_image(model, image_path, save_path=None, target_w=1333, target_
 
     # The model outputs yolo format images, turn them into (x1, y1, x2, y2)
     coords = denormalize_coords(coords, target_w, target_h)
-    coords = xywh_to_x1y1x2y2(coords)
 
     # Shift coordinates so that the origin is with respect to the inner image, not the padding
     shifted_coords = shift_coords(coords, -(target_w-resized_w)/2, -(target_h-resized_h)/2)
@@ -66,15 +67,7 @@ def inference_on_image(model, image_path, save_path=None, target_w=1333, target_
         canvas = np.array(image)
         canvas = cv2.cvtColor(canvas, cv2.COLOR_RGB2BGR)
         for i, c in enumerate(scaled_coords):
-            cv2.rectangle(canvas, (int(c[0]), int(c[1])), (int(c[2]), int(c[3])), (0, 0, 255))
-            cv2.putText(
-                canvas,
-                str(classes[i].item()),
-                (int(c[0]), int(c[1])),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1.2,
-                (255, 0, 0)
-            )
+            cv2.circle(canvas, (int(c[0]), int(c[1])), 3, (0, 0, 255), -1)
 
         save_path = Path(save_path)
         cv2.imwrite(str(save_path.with_suffix('.jpg')), canvas)
@@ -84,21 +77,22 @@ def inference_on_image(model, image_path, save_path=None, target_w=1333, target_
     return {'coords': scaled_coords, 'classes': classes}
 
 
+
 def filter_inference_results(inference):
     """Filter inference results to not contain (no_object) classes.
 
     Args:
         inference: Dictionary of results.
-                   {'bboxes': Tensor[batch_size, n_queries, 4],
+                   {'bboxes': Tensor[batch_size, n_queries, 2],
                     'logits': Tensor[batch_size, n_queries, n_classes]}
 
     Returns:
         Dicts of keys 'bboxes' and 'classes' containing lists of size batch_size with the inferences.
     """
 
-    bboxes = inference['bboxes']  # [batch, 100, 4]
+    bboxes = inference['bboxes']  # [batch, 100, 2]
 
-    classes = inference['logits']  # [batch, 100, 92]
+    classes = inference['logits']  # [batch, 100, 2]
     no_obj_index = classes.size(-1) - 1
 
     classes = classes.softmax(-1)
@@ -112,7 +106,7 @@ def filter_inference_results(inference):
 
 # TODO: Move to box ops
 def denormalize_coords(coords, width, height):
-    return [(x*width, y*height, w*width, h*height) for (x, y, w, h) in coords]
+    return [(x*width, y*height) for (x, y) in coords]
 
 
 def normalize_coords(coords, width, height):
@@ -124,19 +118,17 @@ def xywh_to_x1y1x2y2(coords):
 
 
 def shift_coords(coords, x_shift=0, y_shift=0):
-    return [(x1+x_shift, y1+y_shift, x2+x_shift, y2+y_shift)
-            for (x1, y1, x2, y2) in coords]
+    return [(x1+x_shift, y1+y_shift) for (x1, y1) in coords]
 
 
 def scale_coords(coords, x_scale=1, y_scale=1):
-    return [(x1*x_scale, y1*y_scale, x2*x_scale, y2*y_scale)
-            for (x1, y1, x2, y2) in coords]
+    return [(x1*x_scale, y1*y_scale) for (x1, y1) in coords]
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_weights', required=True)
-    parser.add_argument('--model_config', default='configs/coco_fine_tune.yaml')
+    parser.add_argument('--model_config', default='configs/flickr_faces.yaml')
     parser.add_argument('--image_path', default='data/examples/cat_dog.jpg')
     parser.add_argument('--image_save_path', default='data/examples/cat_dog_inference.jpg')
 

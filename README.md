@@ -1,18 +1,10 @@
 # Simplified DETR: End-to-End Object Detection with Transformers
 
-This is a reimplementation of the simplest model described in [End-to-End Object Detection with Transformers][1]
-by Carion, Nicolas, et al. at Facebook AI Research. Code defining this model can be found
-on their official repository's colab notebooks, but no training loop is given. This repo aims
-to recreate that model, incorporate a training loop, and provide a simple way to download a subset of the
-COCO dataset, so that training a basic example is more accessible in terms of memory and compute resources.
+This is an adaptation of [detr-light][0] to predict facial keypoints instead of bounding
+boxes. For additional information visit the original repository.
 
-The main purpose of this reimplementation is to recreate and understand the model in the process, while
-commenting the code for easier association with the paper via explicit variable naming and providing dimensions
-of tensors.
+## Setup
 
-The code is based on the paper, their official [Github repository][2], and the example notebooks they provide.
-
-# Setup
 Poetry:
 - Run `poetry install`
 
@@ -23,27 +15,46 @@ Pip:
   use `pip3 install albumentations==0.5.2` before running the next step.
 - Run `pip3 install -r requirements.txt`
 
-# Use
+
+## Usage
 
 ### Configurations
 
 Training is configuration-based. Every config is a yaml file describing parameters of
-training, model losses, matcher losses, datasets, etc. You may copy the base `coco_fine_tune.yaml`
+training, model losses, matcher losses, datasets, etc. You may copy the base `flickr_faces.yaml`
 configuration to customize your own. Configurations are stored under the `configs` folder.
 
 
 ### Datasets
 
-Previous dataset:
+The dataset used in this repo is a subset of [Flickr-Faces-HQ][1], created by the user
+[prashantarorat][2] and posted on [Kaggle][3].
 
-- `kaggle competitions download -p data/facial_keypoints/ -c facial-keypoints-detection`
-- `unzip data/facial_keypoints/facial-keypoints-detection.zip -d data/facial_keypoints/`
-- `unzip data/facial_keypoints/training.zip -d data/facial_keypoints/`
-- `unzip data/facial_keypoints/test.zip -d data/facial_keypoints/`
-- `python -m data.format_data --data_file data/facial_keypoints/training.csv`
+To facilitate the download of the data you may use the [Kaggle API][4]. To use it, follow
+the instructions of their repo, which narrow down to:
 
-New dataset:
-From: https://www.kaggle.com/prashantarorat/facial-key-point-data
+- Install the python package with `pip3 install kaggle` (the package is already installed if using poetry)
+- Go to the Account section of your Kaggle profile
+- Select 'Create API Token', this will download a `kaggle.json` file that contains your token
+- Move the `kaggle.json` file to the `~/.kaggle/` directory
+- Check the functionality with `kaggle --version` or `poetry run kaggle --version`
+- If you are using the API from Google Colab you can use the following snippet
+
+```python
+# from: https://colab.research.google.com/github/corrieann/kaggle/blob/master/kaggle_api_in_colab.ipynb
+from google.colab import files
+
+uploaded = files.upload()
+
+for fn in uploaded.keys():
+  print('User uploaded file "{name}" with length {length} bytes'.format(
+      name=fn, length=len(uploaded[fn])))
+  
+# Then move kaggle.json into the folder where the API expects to find it.
+!mkdir -p ~/.kaggle/ && mv kaggle.json ~/.kaggle/ && chmod 600 ~/.kaggle/kaggle.json
+```
+
+Once you have the API working, you can download and unzip the dataset with:
 
 - `kaggle datasets download -d prashantarorat/facial-key-point-data -p data/facial_keypoints`
 - `unzip data/facial_keypoints/facial-key-point-data.zip -d data/facial_keypoints/`
@@ -62,8 +73,10 @@ and the location under which the output image will be saved, use the `--help` fl
 
 
 
+[0]: https://github.com/JA-Bar/detr-light
+[1]: https://github.com/NVlabs/ffhq-dataset
+[2]: https://www.kaggle.com/prashantarorat
+[3]: https://www.kaggle.com/prashantarorat/facial-key-point-data
+[4]: https://github.com/Kaggle/kaggle-api
 
-[1]: https://arxiv.org/abs/2005.12872
-[2]: https://github.com/facebookresearch/detr
-[3]: https://cocodataset.org/#explore
 

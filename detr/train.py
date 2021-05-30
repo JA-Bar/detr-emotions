@@ -150,7 +150,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('detr_train')
 
     parser.add_argument('--mode', default='pretrained', choices=['pretrained', 'checkpoint', 'from_scratch'])
-    parser.add_argument('--train_section', default='head', choices=['head', 'backbone', 'all'])
+    parser.add_argument('--train_section', default='head', choices=['head', 'backbone', 'all', 'adapters'])
     parser.add_argument('--config', default='flickr_faces')
     parser.add_argument('--config_base_path', default='configs/')
     parser.add_argument('--save_every', type=int, default=10)

@@ -54,8 +54,8 @@ class FlickrFaces(Dataset):
 
         item = self.data[self.all_indices[idx]]
         for i, point in enumerate(item['face_landmarks']):
-            feature_points[i, 0] = point[0]
-            feature_points[i, 1] = point[1]
+            feature_points[i, 0] = np.clip(point[0], 1, 511)
+            feature_points[i, 1] = np.clip(point[1], 1, 511)
             feature_classes[i] = 0
 
         image = Image.open(self.images_path / item['file_name'])
