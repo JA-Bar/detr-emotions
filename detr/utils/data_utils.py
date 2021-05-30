@@ -15,6 +15,8 @@ def denormalize_tensor_image(image, mean='imagenet', std='imagenet', pillow_outp
 
     mean = mean.view(3, 1, 1)
     std = std.view(3, 1, 1)
+
+    image = image.clone()
     image = (image*std) + mean
     image = image * 255
     image = image.permute(1, 2, 0)

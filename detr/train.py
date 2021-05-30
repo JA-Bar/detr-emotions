@@ -14,7 +14,7 @@ import detr.logs.logger as log
 
 from detr import models
 from detr.datasets import transforms
-from detr.datasets.coco_subset import CocoSubset
+from detr.datasets.flickr_faces import FlickrFaces
 from detr.eval import validation_loop
 from detr.utils import data_utils
 from detr.utils.checkpoints import CheckpointManager
@@ -30,20 +30,19 @@ def train(args):
     val_transforms = transforms.get_val_transforms()
 
     logger.info("Loading the dataset...")
-    if config['dataset']['name'] == 'coco_subset':
-        # TODO: Look into train_transforms hiding the objects
-        # Transform in such a way that this can't be the case
-        train_dataset = CocoSubset(config['dataset']['coco_path'],
-                                   config['dataset']['target_classes'],
-                                   train_transforms,
-                                   'train',
-                                   config['dataset']['train_val_split'])
+    if config['dataset']['name'] == 'flickr_faces':
+        train_dataset = FlickrFaces(config['dataset']['labels_file'],
+                                    config['dataset']['images_path'],
+                                    train_transforms,
+                                    train=True,
+                                    train_val_split=config['dataset']['train_val_split'])
 
-        val_dataset = CocoSubset(config['dataset']['coco_path'],
-                                 config['dataset']['target_classes'],
-                                 val_transforms,
-                                 'val',
-                                 config['dataset']['train_val_split'])
+        val_dataset = FlickrFaces(config['dataset']['labels_file'],
+                                  config['dataset']['images_path'],
+                                  val_transforms,
+                                  train=False,
+                                  train_val_split=config['dataset']['train_val_split'])
+
     else:
         raise ValueError("Dataset name not recognized or implemented")
 
@@ -93,11 +92,9 @@ def train(args):
     model.to(device)
 
     matcher = models.HungarianMatcher(config['losses']['lambda_matcher_classes'],
-                                      config['losses']['lambda_matcher_giou'],
                                       config['losses']['lambda_matcher_l1'])
 
     loss_fn = models.DETRLoss(config['losses']['lambda_loss_classes'],
-                              config['losses']['lambda_loss_giou'],
                               config['losses']['lambda_loss_l1'],
                               config['dataset']['num_classes'],
                               config['losses']['no_class_weight'])
@@ -152,7 +149,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--mode', default='pretrained', choices=['pretrained', 'checkpoint', 'from_scratch'])
     parser.add_argument('--train_section', default='head', choices=['head', 'backbone', 'all'])
-    parser.add_argument('--config', default='coco_fine_tune')
+    parser.add_argument('--config', default='flickr_faces')
     parser.add_argument('--config_base_path', default='configs/')
     parser.add_argument('--save_every', type=int, default=10)
     parser.add_argument('--eval_every', type=int, default=10)

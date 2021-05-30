@@ -1,7 +1,5 @@
 # Simplified DETR: End-to-End Object Detection with Transformers
 
-![image](./data/examples/cat_dog_inference.jpg)
-
 This is a reimplementation of the simplest model described in [End-to-End Object Detection with Transformers][1]
 by Carion, Nicolas, et al. at Facebook AI Research. Code defining this model can be found
 on their official repository's colab notebooks, but no training loop is given. This repo aims
@@ -36,21 +34,20 @@ configuration to customize your own. Configurations are stored under the `config
 
 ### Datasets
 
-As previously mentioned, the project provides a way to download a subset of COCO to train the model.
-In order to facilitate this, under the config file `coco_fine_tune.yaml` change the classes you are interested
-in under the key `target_classes`, with the name of the classes as they appear on the official [COCO page][3].
+Previous dataset:
 
-Once your target classes are defined, you can then run `python -m data/download_coco_subset.py` with flags such as
-`--limit` to define how many images per class will be downloaded.
+- `kaggle competitions download -p data/facial_keypoints/ -c facial-keypoints-detection`
+- `unzip data/facial_keypoints/facial-keypoints-detection.zip -d data/facial_keypoints/`
+- `unzip data/facial_keypoints/training.zip -d data/facial_keypoints/`
+- `unzip data/facial_keypoints/test.zip -d data/facial_keypoints/`
+- `python -m data.format_data --data_file data/facial_keypoints/training.csv`
 
-The given dataset that interprets this information is `detr.datasets.CocoSubset`, but you may
-create a custom dataset of your own.
+New dataset:
+From: https://www.kaggle.com/prashantarorat/facial-key-point-data
 
-The requirements are: 
-- Accept an albumentations transform (if you want to use the built-in transforms)
-- Let \_\_getitem\_\_  return a tuple of `(image, labels)`, where `image` is a Tensor of the image
-  and `labels` is dictionary of {'bboxes': Tensor, 'classes': Tensor}, with the respective annotations
-  for objects in the image.
+- `kaggle datasets download -d prashantarorat/facial-key-point-data -p data/facial_keypoints`
+- `unzip data/facial_keypoints/facial-key-point-data.zip -d data/facial_keypoints/`
+
 
 ### Training
 

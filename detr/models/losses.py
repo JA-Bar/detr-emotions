@@ -2,14 +2,11 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from detr.utils import box_ops
-
 
 class DETRLoss(nn.Module):
-    def __init__(self, lambda_classes, lambda_giou, lambda_l1, num_classes, no_class_weight=0.1):
+    def __init__(self, lambda_classes, lambda_l1, num_classes, no_class_weight=0.1):
         super().__init__()
         self.lambda_classes = lambda_classes
-        self.lambda_giou = lambda_giou
         self.lambda_l1 = lambda_l1
 
         self.no_class_index = num_classes
@@ -36,10 +33,10 @@ class DETRLoss(nn.Module):
             indices: List of tuples corresponsing to the pairing indices.
         """
         class_loss = self.classification_loss(predictions, labels, indices)
-        giou_loss, l1_loss = self.bbox_losses(predictions, labels, indices)
+        l1_loss = self.bbox_losses(predictions, labels, indices)
 
         # compute the box loss
-        total_loss = class_loss*self.lambda_classes + giou_loss*self.lambda_giou + l1_loss*self.lambda_l1
+        total_loss = class_loss * self.lambda_classes + l1_loss * self.lambda_l1
 
         return total_loss
 
@@ -64,7 +61,7 @@ class DETRLoss(nn.Module):
         all_target_classes[pred_batch_idx, pred_idx] = target_classes
 
         # down-weight the no-object class to account for class imbalance
-        classes_weights = torch.ones((self.no_class_index+1,), device=device)
+        classes_weights = torch.ones((self.no_class_index + 1,), device=device)
         classes_weights[self.no_class_index] = self.no_class_weight
 
         class_loss = F.cross_entropy(
@@ -87,14 +84,11 @@ class DETRLoss(nn.Module):
         boxes_labels = torch.cat([batch['bboxes'][J] for batch, (_, J) in zip(labels, indices)])
 
         # compute the generalized IoU loss
-        flat_boxes_pred = box_ops.box_cxcywh_to_xyxy(boxes_pred)
-        flat_boxes_labels = box_ops.box_cxcywh_to_xyxy(boxes_labels)
-
-        giou_loss = 1 - box_ops.generalized_box_iou(flat_boxes_pred, flat_boxes_labels)
-        giou_loss = torch.diag(giou_loss).sum() / boxes_labels.size(0)
+        flat_boxes_pred = boxes_pred
+        flat_boxes_labels = boxes_labels
 
         # compute the L1 loss
         l1_loss = F.l1_loss(flat_boxes_pred, flat_boxes_labels)
 
-        return giou_loss, l1_loss
+        return l1_loss
 

@@ -1,13 +1,12 @@
 dataset:
     # mandatory dataset options
-    name: "coco_subset"
-    num_classes: 91  # your highest class index + 1, 91 in case of coco
-    train_val_split: 0.8
+    name: "flickr_faces"
+    train_val_split: 0.9
+    num_classes: 1
 
     # options depending on your dataset
-    set: "val"  # or train
-    coco_path: "data/coco/"
-    target_classes: ["dog", "cat", "person"]
+    labels_file: "data/facial_keypoints/all_data.json"
+    images_path: "data/facial_keypoints/images"
 
 model:
     head_type: 'simple'  # 'simple' or 'complex'
@@ -18,14 +17,12 @@ model:
 losses:
     # lambdas are the loss weights
     lambda_matcher_classes: 1
-    lambda_matcher_giou: 2
-    lambda_matcher_l1: 5
+    lambda_matcher_l1: 6
 
     lambda_loss_classes: 1
-    lambda_loss_giou: 2
-    lambda_loss_l1: 5
+    lambda_loss_l1: 6
 
-    no_class_weight: 0.001
+    no_class_weight: 2.12  # we are expecting 68 class vs 32 no-class
 
 training:
     epochs: 50

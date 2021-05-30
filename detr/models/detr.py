@@ -13,7 +13,7 @@ class FeedForwardNetwork(nn.Module):
 
         self.fc1_bbox = nn.Linear(dim_model, dim_model)
         self.fc2_bbox = nn.Linear(dim_model, dim_model)
-        self.fc3_bbox = nn.Linear(dim_model, 4)
+        self.fc3_bbox = nn.Linear(dim_model, 2)
 
         self.fc_logits = nn.Linear(dim_model, num_classes + 1)
 
@@ -37,7 +37,7 @@ class SimpleFeedForwardNetwork(nn.Module):
         super().__init__()
 
         self.linear_class = nn.Linear(dim_model, num_classes + 1)
-        self.linear_bbox = nn.Linear(dim_model, 4)
+        self.linear_bbox = nn.Linear(dim_model, 2)
 
     def forward(self, x):
         logits_out = self.linear_class(x)
@@ -126,12 +126,14 @@ class DETR(nn.Module):
         else:
             state_dict = torch.load(path_to_dict)
 
+        # TODO: try except when loading dict, some weights are different size
+        # temporarily deleting commenting out the ffn weights
         name_changes = {
             'query_pos': 'object_queries',
             'row_embed': 'row_pos_embed',
             'col_embed': 'col_pos_embed',
-            'linear_class': 'ffn.linear_class',
-            'linear_bbox': 'ffn.linear_bbox',
+            # 'linear_class': 'ffn.linear_class',
+            # 'linear_bbox': 'ffn.linear_bbox',
         }
 
         # explicit conversion to list is necessary because keys change during iteration

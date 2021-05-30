@@ -6,14 +6,11 @@ import torch
 from scipy.optimize import linear_sum_assignment
 from torch import nn
 
-from detr.utils import box_ops
-
 
 class HungarianMatcher(nn.Module):
-    def __init__(self, lambda_classes, lambda_giou, lambda_l1):
+    def __init__(self, lambda_classes, lambda_l1):
         super().__init__()
         self.lambda_classes = lambda_classes
-        self.lambda_giou = lambda_giou
         self.lambda_l1 = lambda_l1
 
     def forward(self, predictions, labels):
@@ -35,17 +32,12 @@ class HungarianMatcher(nn.Module):
         # generalize
         flat_boxes_pred = predictions['bboxes'].flatten(0, 1)
         flat_boxes_pred = flat_boxes_pred.detach()
-        flat_boxes_pred = box_ops.box_cxcywh_to_xyxy(flat_boxes_pred)
 
         flat_boxes_labels = torch.cat([label['bboxes'] for label in labels])
         flat_boxes_labels = flat_boxes_labels.detach()
-        flat_boxes_labels = box_ops.box_cxcywh_to_xyxy(flat_boxes_labels)
-
-        # GIoU loss is negative as a loss because you want to maximize GIoU
-        pairwise_giou_loss = -box_ops.generalized_box_iou(flat_boxes_pred, flat_boxes_labels)
 
         pairwise_l1_loss = torch.cdist(flat_boxes_pred, flat_boxes_labels, p=1)
-        boxes_loss = self.lambda_giou*pairwise_giou_loss + self.lambda_l1*pairwise_l1_loss
+        boxes_loss = self.lambda_l1 * pairwise_l1_loss
 
         # They use the prediction directly as a loss instead of cross-entropy
         flat_classes_pred = predictions['logits'].flatten(0, 1)
@@ -56,7 +48,7 @@ class HungarianMatcher(nn.Module):
 
         class_loss = -flat_classes_pred[:, flat_classes_labels]
 
-        hungarian_loss = self.lambda_classes*class_loss + boxes_loss
+        hungarian_loss = self.lambda_classes * class_loss + boxes_loss
 
         # Now to that you have the pairwise match loss, split it into the original batches
         # computation has to be on cpu because of scipy
