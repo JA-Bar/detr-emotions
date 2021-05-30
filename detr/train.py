@@ -81,6 +81,8 @@ def train(args):
         to_train = ['ffn']
     elif args.train_section == 'backbone':
         to_train = ['backbone', 'conv']
+    elif args.train_section == 'adapters':
+        to_train = ['object_queries', 'ffn']
     else:
         to_train = ['ffn', 'backbone', 'conv', 'transformer', 'row', 'col', 'object']
 
