@@ -58,7 +58,7 @@ def train(args):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    checkpoint_manager = CheckpointManager(args.config, args.save_every)
+    checkpoint_manager = CheckpointManager(args.config, args.save_every, save_path=args.save_path)
 
     logger.info("Loading model...")
     model = models.DETR(config['dataset']['num_classes'],
@@ -68,7 +68,9 @@ def train(args):
                         head_type=config['model']['head_type'])
 
     # TODO: implement scheduler
-    optim = AdamW(model.parameters(), config['training']['lr'])  # pending
+    optim = AdamW(model.parameters(),
+                  config['training']['lr'],
+                  weight_decay=config['training']['weight_decay'])
 
     if args.mode == 'pretrained':
         model.load_demo_state_dict('data/state_dicts/detr_demo.pth')
@@ -82,9 +84,11 @@ def train(args):
     elif args.train_section == 'backbone':
         to_train = ['backbone', 'conv']
     elif args.train_section == 'adapters':
-        to_train = ['object_queries', 'ffn']
-    else:
+        to_train = ['object_queries', 'ffn', 'transformer']
+    elif args.train_section == 'all':
         to_train = ['ffn', 'backbone', 'conv', 'transformer', 'row', 'col', 'object']
+    else:
+        raise AttributeError("Invalid train_section option")
 
     # Freeze everything but the modules that are in to_train
     for name, param in model.named_parameters():
@@ -154,6 +158,7 @@ if __name__ == '__main__':
     parser.add_argument('--config', default='flickr_faces')
     parser.add_argument('--config_base_path', default='configs/')
     parser.add_argument('--save_every', type=int, default=10)
+    parser.add_argument('--save_path', default='data/state_dicts/')
     parser.add_argument('--eval_every', type=int, default=10)
     args = parser.parse_args()
 

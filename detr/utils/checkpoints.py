@@ -9,7 +9,7 @@ import torch
 class CheckpointManager:
     """Class to handle model, optimizer and loss checkpoints."""
     # saves checkpoint with the format: ConfigName_Epoch_date.pt
-    def __init__(self, config_name, save_every=5, current_epoch=0, save_path='data/state_dicts'):
+    def __init__(self, config_name, save_every=5, current_epoch=1, save_path='data/state_dicts'):
         self.config_name = config_name
         self.save_every = save_every
         self.current_epoch = current_epoch
@@ -45,7 +45,7 @@ class CheckpointManager:
             if len(checkpoints) == 0:
                 raise AttributeError("No checkpoints found.")
 
-            checkpoints.sort(key=lambda x: datetime.strptime(x.split('_')[-1], "%Y-%m-%d"))
+            checkpoints.sort(key=lambda x: datetime.strptime(x.replace('.pt', '').split('_')[-1], "%Y-%m-%d"))
             loaded_checkpoint = torch.load(checkpoints[0])
         else:
             raise ValueError(f"Mode{mode} not allowed.")

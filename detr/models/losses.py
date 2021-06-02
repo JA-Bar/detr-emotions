@@ -78,12 +78,11 @@ class DETRLoss(nn.Module):
         pred_all_indices = [(torch.full_like(pred, batch), pred) for batch, (pred, _) in enumerate(indices)]
         pred_batch_idx, pred_idx = map(torch.cat, zip(*pred_all_indices))
 
-        boxes_pred = predictions['bboxes']  # [batch_size, n_object_queries, 4]
+        boxes_pred = predictions['bboxes']  # [batch_size, n_object_queries, 2]
         boxes_pred = boxes_pred[pred_batch_idx, pred_idx]
 
         boxes_labels = torch.cat([batch['bboxes'][J] for batch, (_, J) in zip(labels, indices)])
 
-        # compute the generalized IoU loss
         flat_boxes_pred = boxes_pred
         flat_boxes_labels = boxes_labels
 

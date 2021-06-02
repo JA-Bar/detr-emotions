@@ -77,7 +77,6 @@ def inference_on_image(model, image_path, save_path=None, target_w=1333, target_
     return {'coords': scaled_coords, 'classes': classes}
 
 
-
 def filter_inference_results(inference):
     """Filter inference results to not contain (no_object) classes.
 
@@ -142,10 +141,12 @@ if __name__ == '__main__':
                  config['model']['n_heads'],
                  n_queries=config['model']['n_queries'])
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     if args.model_weights == 'demo':
         model.load_demo_state_dict('data/state_dicts/detr_demo.pth')
     else:
-        state_dict = torch.load(args.model_weights)['state_dict']
+        state_dict = torch.load(args.model_weights, map_location=device)['state_dict']
         model.load_state_dict(state_dict)
 
     inference_on_image(model, args.image_path, args.image_save_path)
