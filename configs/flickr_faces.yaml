@@ -9,7 +9,7 @@ dataset:
     images_path: "data/facial_keypoints/images"
 
 model:
-    head_type: 'simple'  # 'simple' or 'complex'
+    head_type: 'complex'  # 'simple' or 'complex'
     dim_model: 256
     n_heads: 8
     n_queries: 100
