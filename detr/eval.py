@@ -8,7 +8,7 @@ from detr.utils import data_utils
 
 def validation_loop(model, matcher, val_loader, loss_fn, device):
     model.eval()
-    loss_hist = deque(maxlen=20)
+    loss_hist = deque()
 
     with torch.no_grad():
         for images, labels in tqdm(val_loader, 'Evaluating model'):

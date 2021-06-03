@@ -6,6 +6,9 @@ from torch import nn
 from torch.nn import functional as F
 from torchvision.models import resnet50
 
+import requests
+from tqdm import tqdm
+
 
 class FeedForwardNetwork(nn.Module):
     def __init__(self, dim_model, num_classes):
@@ -53,7 +56,7 @@ class DETR(nn.Module):
                  n_encoder_layers=6,
                  n_decoder_layers=6,
                  n_queries=100,
-                 head_type='simple'):
+                 head_type='complex'):
         super().__init__()
 
         # initialize resnet and remove the last two layers (avgpool and fc)
@@ -114,17 +117,18 @@ class DETR(nn.Module):
         return preds
 
     def load_demo_state_dict(self, path_to_dict):
+        url = 'https://drive.google.com/uc?export=download&id=109o6As_ocO8Q1_J6eDqMxQ3KNlleUUVE'
+
         path_to_dict = Path(path_to_dict)
         if not path_to_dict.exists():
-            print('No DETR pretrained weights found, downloading demo...')
-            state_dict = torch.hub.load_state_dict_from_url(
-                url='https://dl.fbaipublicfiles.com/detr/detr_demo-da2a99e9.pth',
-                model_dir=str(path_to_dict.parent),
-                file_name=str(path_to_dict.name),
-                map_location='cpu',
-                check_hash=True)
-        else:
-            state_dict = torch.load(path_to_dict)
+
+            raise ValueError("No DETR pretrained weights found. Currently the pretrained " 
+                             f"weights can't be automatically downloaded, use this link: {url} "
+                             f"and save the file as: {str(path_to_dict)}")
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        state_dict = torch.load(path_to_dict, map_location=device)['state_dict']
+        self.to(device)
 
         # TODO: try except when loading dict, some weights are different size
         # temporarily deleting commenting out the ffn weights
@@ -148,5 +152,5 @@ class DETR(nn.Module):
                 state_dict[new_name] = state_dict[name]
                 state_dict.pop(name)
 
-        self.load_state_dict(state_dict, strict=False)
+        self.load_state_dict(state_dict, strict=True)
 

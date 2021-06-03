@@ -66,8 +66,9 @@ def train(args):
                         config['model']['n_heads'],
                         n_queries=config['model']['n_queries'],
                         head_type=config['model']['head_type'])
+    model.to(device)
 
-    # TODO: implement scheduler
+    # TODO: implement scheduler, data parallel
     optim = AdamW(model.parameters(),
                   config['training']['lr'],
                   weight_decay=config['training']['weight_decay'])
@@ -77,6 +78,8 @@ def train(args):
     elif args.mode == 'checkpoint':
         state_dict, optim_dict = checkpoint_manager.load_checkpoint('latest')
         model.load_state_dict(state_dict)
+        model.to(device)  # necessary for full compatibility of CPU and GPU?
+
         optim.load_state_dict(optim_dict)
 
     if args.train_section == 'head':
@@ -96,8 +99,6 @@ def train(args):
     for name, param in model.named_parameters():
         if not any(map(name.startswith, to_train)):
             param.requires_grad = False
-
-    model.to(device)
 
     matcher = models.HungarianMatcher(config['losses']['lambda_matcher_classes'],
                                       config['losses']['lambda_matcher_l1'])
@@ -146,6 +147,7 @@ def train(args):
         loss_desc = f"Loss: {sum(loss_hist)/len(loss_hist)}"
         loss_hist.clear()
 
+        # NOTE: eval sometimes showing strange behavior when training the transformer
         if (epoch % args.eval_every == 0) and epoch != 0:
             validation_loop(model, matcher, val_loader, loss_fn, device)
 
@@ -156,7 +158,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('detr_train')
 
     parser.add_argument('--mode', default='pretrained', choices=['pretrained', 'checkpoint', 'from_scratch'])
-    parser.add_argument('--train_section', default='head', choices=['head', 'backbone', 'all', 'adapters'])
+    parser.add_argument('--train_section', default='head', choices=['head', 'backbone', 'all', 'adapters', 'no_backbone'])
     parser.add_argument('--config', default='flickr_faces')
     parser.add_argument('--config_base_path', default='configs/')
     parser.add_argument('--save_every', type=int, default=10)

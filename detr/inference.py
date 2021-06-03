@@ -139,7 +139,8 @@ if __name__ == '__main__':
     model = DETR(config['dataset']['num_classes'],
                  config['model']['dim_model'],
                  config['model']['n_heads'],
-                 n_queries=config['model']['n_queries'])
+                 n_queries=config['model']['n_queries'],
+                 head_type=config['model']['head_type'])
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

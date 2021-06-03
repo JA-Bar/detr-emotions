@@ -29,6 +29,7 @@ class CheckpointManager:
 
         checkpoint_name = Path(self.save_path, f"{self.config_name}_{self.current_epoch}_{today}.pt")
 
+        # NOTE: for dataparallel use: torch.save(model.module.state_dict())
         torch.save({
             'epoch': self.current_epoch,
             'state_dict': model.state_dict(),
@@ -46,11 +47,13 @@ class CheckpointManager:
                 raise AttributeError("No checkpoints found.")
 
             checkpoints.sort(key=lambda x: datetime.strptime(x.replace('.pt', '').split('_')[-1], "%Y-%m-%d"))
-            loaded_checkpoint = torch.load(checkpoints[0])
-        else:
-            raise ValueError(f"Mode{mode} not allowed.")
 
-        self.current_epoch = loaded_checkpoint['epoch']
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            loaded_checkpoint = torch.load(checkpoints[0], map_location=device)
+        else:
+            raise ValueError(f"Mode {mode} not allowed.")
+
+        self.current_epoch = loaded_checkpoint['epoch'] + 1
 
         return loaded_checkpoint['state_dict'], loaded_checkpoint['optimizer_state']
             
