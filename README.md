@@ -1,7 +1,10 @@
 # Simplified DETR: End-to-End Object Detection with Transformers
 
+![image](./data/examples/demo.jpg)
+
 This is an adaptation of [detr-light][0] to predict facial keypoints instead of bounding
-boxes. For additional information visit the original repository.
+boxes. For additional information visit the original repository. Demo image belongs to
+the Flickr-Faces dataset, more details below.
 
 ## Setup
 

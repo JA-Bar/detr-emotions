@@ -15,8 +15,10 @@ from detr.datasets import transforms
 from detr.utils import data_utils
 
 
-def inference_on_image(model, image_path, save_path=None, target_w=1333, target_h=800):
-    image = Image.open(image_path)
+def inference_on_image(model, image_path=None, image=None, output_path=None, target_w=1333, target_h=800):
+    if not image:
+        image_path = Path(image_path)
+        image = Image.open(str(image_path))
 
     image_w_h_ratio = image.width / image.height
     target_w_h_ratio = target_w / target_h
@@ -40,8 +42,11 @@ def inference_on_image(model, image_path, save_path=None, target_w=1333, target_
         A.pytorch.ToTensor(),
     ])
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     tensor_image = inference_transform(image=np.array(resized_image))['image']
     tensor_image = torch.unsqueeze(tensor_image, 0)
+    tensor_image = tensor_image.to(device)
 
     # Compute the inference
     model.eval()
@@ -63,16 +68,18 @@ def inference_on_image(model, image_path, save_path=None, target_w=1333, target_
     # Then return the coordinates to the scale of the original image
     scaled_coords = scale_coords(shifted_coords, 1/shrink_ratio, 1/shrink_ratio)
 
-    if save_path is not None:
+    if output_path is not None:
+        output_path = Path(output_path)
+
         canvas = np.array(image)
         canvas = cv2.cvtColor(canvas, cv2.COLOR_RGB2BGR)
-        for i, c in enumerate(scaled_coords):
+        for _, c in enumerate(scaled_coords):
             cv2.circle(canvas, (int(c[0]), int(c[1])), 3, (0, 0, 255), -1)
 
-        save_path = Path(save_path)
-        cv2.imwrite(str(save_path.with_suffix('.jpg')), canvas)
+        output_name = (output_path / (image_path.stem + '_inf')).with_suffix('.jpg')
+        cv2.imwrite(str(output_name), canvas)
 
-        print('Image saved at:', str(save_path.with_suffix('.jpg')))
+        print('Image saved at:', str(output_name))
 
     return {'coords': scaled_coords, 'classes': classes}
 
@@ -96,6 +103,9 @@ def filter_inference_results(inference):
 
     classes = classes.softmax(-1)
     _, classes = torch.max(classes, dim=-1)  # [batch, 100]
+
+    classes = classes.cpu()
+    bboxes = bboxes.cpu()
 
     filtered_classes = [c[c!=no_obj_index].numpy() for c in classes]
     filtered_bboxes = [b[c!=no_obj_index].numpy() for (c, b) in zip(classes, bboxes)]
@@ -128,8 +138,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_weights', required=True)
     parser.add_argument('--model_config', default='configs/flickr_faces.yaml')
-    parser.add_argument('--image_path', default='data/examples/cat_dog.jpg')
-    parser.add_argument('--image_save_path', default='data/examples/cat_dog_inference.jpg')
+    parser.add_argument('--image_path', default='data/examples/michael_scott.jpg')
+    parser.add_argument('--output_path', default='data/examples/')
 
     args = parser.parse_args()
 
@@ -150,5 +160,5 @@ if __name__ == '__main__':
         state_dict = torch.load(args.model_weights, map_location=device)['state_dict']
         model.load_state_dict(state_dict)
 
-    inference_on_image(model, args.image_path, args.image_save_path)
+    inference_on_image(model, image_path=args.image_path, output_path=args.output_path)
 
